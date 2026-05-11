@@ -2,5 +2,4 @@ Yova's Well Sketcher is a browser-based well sketcher and visualizer for oil/gas
 
 See in action: https://youtu.be/e__AwQZ29D0
 
-<img width="1901" height="926" alt="Screenshot 2026-05-11 234952" src="https://github.com/user-attachments/assets/b8d8824a-9842-4af8-a891-31f5725570c2" />
-
+<img width="1548" height="910" alt="Screenshot 2026-05-11 234952" src="https://github.com/user-attachments/assets/192dcac5-c4c2-4db4-8997-78c28a9bee8f" />
