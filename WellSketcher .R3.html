@@ -1,0 +1,3385 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Yova's Well Sketcher — Engineering Schematic</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<style>
+:root {
+  --bg: #ffffff;
+  --bg2: #f4f6f8;
+  --bg3: #e8edf2;
+  --bd: #b0bec8;
+  --bd2: #7a9ab0;
+  --hdr-bg: #e0ecf4;
+  --hdr-txt: #0a2a42;
+  --text: #1a2a38;
+  --muted: #556677;
+  --cyan: #00829c;
+  --cyan-lt: #c8eaf4;
+  --green: #2e7d32;
+  --amber: #b45a00;
+  --red: #b71c1c;
+  --pur: #4a148c;
+  --tub1-color: #bbbbbb;  /* silver/chrome */
+  --tub2-color: #aaaaaa;
+  --casing-color: #7ab4d4;
+  --fnt: 'IBM Plex Sans', sans-serif;
+  --mono: 'IBM Plex Mono', monospace;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--bg);color:var(--text);font-family:var(--fnt);font-size:11px;display:flex;flex-direction:column;height:100vh;overflow:hidden;}
+
+/* ── HEADER ── */
+header {
+  background: var(--hdr-bg);
+  border-bottom: 2px solid var(--bd2);
+  padding: 6px 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-shrink: 0;
+}
+.logo { font-family: var(--mono); font-weight: 700; font-size: 14px; color: var(--hdr-txt); letter-spacing: 1px; }
+.logo span { color: var(--cyan); }
+.hbadge { font-family: var(--mono); font-size: 9px; background: var(--cyan); color: #fff; padding: 2px 7px; border-radius: 2px; letter-spacing: 1px; }
+.hdr-btns { margin-left: auto; display: flex; gap: 8px; }
+.btn { height: 26px; padding: 0 12px; background: var(--bg); border: 1px solid var(--bd2); border-radius: 3px; color: var(--hdr-txt); font-family: var(--mono); font-size: 10px; font-weight: 600; cursor: pointer; transition: all .15s; letter-spacing: .5px; }
+.btn:hover { border-color: var(--cyan); color: var(--cyan); background: var(--cyan-lt); }
+.btn.primary { border-color: var(--cyan); color: var(--cyan); }
+.btn.success { border-color: var(--green); color: var(--green); }
+.btn.danger { border-color: var(--red); color: var(--red); }
+
+/* ── LAYOUT ── */
+.app { display: flex; flex: 1; overflow: hidden; }
+
+/* ── LEFT PANEL (controls) ── */
+.side {
+  width: 340px;
+  background: var(--bg2);
+  border-right: 1px solid var(--bd);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+.stabs { display: flex; border-bottom: 1px solid var(--bd); background: var(--bg3); flex-shrink: 0; }
+.stab { flex: 1; padding: 7px 2px; text-align: center; font-family: var(--mono); font-size: 9px; font-weight: 600; letter-spacing: .5px; text-transform: uppercase; cursor: pointer; color: var(--muted); border-bottom: 2px solid transparent; transition: all .2s; }
+.stab.on { color: var(--cyan); border-bottom-color: var(--cyan); background: var(--bg2); }
+.stab:hover:not(.on) { color: var(--text); }
+.sb-body { flex: 1; overflow-y: auto; padding: 10px; }
+.sb-body::-webkit-scrollbar { width: 4px; } .sb-body::-webkit-scrollbar-thumb { background: var(--bd2); border-radius: 2px; }
+
+.tp { display: none; } .tp.on { display: block; }
+.sec { background: var(--bg); border: 1px solid var(--bd); border-radius: 4px; padding: 9px 10px; margin-bottom: 8px; }
+.sec-t { font-family: var(--mono); font-size: 9px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; color: var(--cyan); margin-bottom: 8px; display: flex; align-items: center; gap: 6px; }
+.sec-t::after { content: ''; flex: 1; height: 1px; background: var(--bd); }
+.row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-bottom: 6px; }
+.row1 { margin-bottom: 6px; }
+.lbl { font-family: var(--mono); font-size: 9px; color: var(--muted); margin-bottom: 2px; }
+input, select { width: 100%; height: 26px; background: var(--bg); border: 1px solid var(--bd); border-radius: 3px; color: var(--text); font-family: var(--mono); font-size: 10px; padding: 0 6px; outline: none; transition: border-color .15s; }
+input:focus, select:focus { border-color: var(--cyan); }
+.btn-row { display: flex; gap: 6px; margin-top: 6px; }
+.btn.w100 { width: 100%; justify-content: center; display: flex; align-items: center; gap: 4px; height: 28px; }
+
+/* DB list */
+.db-list { max-height: 200px; overflow-y: auto; border: 1px solid var(--bd); border-radius: 3px; background: var(--bg); }
+.db-list::-webkit-scrollbar { width: 3px; } .db-list::-webkit-scrollbar-thumb { background: var(--bd2); }
+.db-head, .db-row { display: grid; grid-template-columns: 46px 46px 52px 38px 40px 1fr; gap: 3px; padding: 4px 6px; font-family: var(--mono); font-size: 9px; }
+.db-head { background: var(--hdr-bg); color: var(--cyan); font-weight: 700; position: sticky; top: 0; border-bottom: 1px solid var(--bd); }
+.db-row { color: var(--text); cursor: pointer; border-bottom: 1px solid rgba(176,190,200,.3); }
+.db-row:hover, .db-row.active { background: var(--cyan-lt); color: var(--cyan); }
+
+/* String cards */
+.str-card { background: var(--bg); border: 1px solid var(--bd); border-radius: 4px; padding: 7px 9px; margin-bottom: 7px; }
+.str-card-hdr { display: flex; align-items: center; gap: 6px; margin-bottom: 6px; }
+.str-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+.str-title { font-weight: 600; font-size: 11px; flex: 1; }
+.str-badge { font-family: var(--mono); font-size: 8px; padding: 1px 5px; border-radius: 2px; border: 1px solid; }
+.str-rows { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; }
+.str-f { font-family: var(--mono); font-size: 9px; color: var(--muted); }
+.str-v { font-family: var(--mono); font-size: 10px; font-weight: 600; }
+
+/* Elem cards */
+.elem-card { background: var(--bg); border: 1px solid var(--bd); border-radius: 4px; padding: 6px 8px; margin-bottom: 5px; display: flex; align-items: center; gap: 7px; }
+.elem-icon { width: 24px; height: 24px; border-radius: 3px; display: flex; align-items: center; justify-content: center; font-size: 12px; flex-shrink: 0; }
+.elem-info { flex: 1; min-width: 0; }
+.elem-name { font-size: 10px; font-weight: 600; }
+.elem-meta { font-family: var(--mono); font-size: 9px; color: var(--muted); }
+.elem-del { width: 20px; height: 20px; border-radius: 2px; background: transparent; border: 1px solid var(--bd); color: var(--muted); font-size: 10px; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.elem-del:hover { border-color: var(--red); color: var(--red); }
+
+/* ── MAIN VIEW ── */
+.main-view { flex: 1; display: flex; flex-direction: column; overflow: hidden; min-width: 0; }
+.vtabs { display: flex; background: var(--bg3); border-bottom: 1px solid var(--bd); flex-shrink: 0; }
+.vtab { padding: 8px 18px; font-family: var(--mono); font-size: 10px; font-weight: 700; letter-spacing: .5px; text-transform: uppercase; cursor: pointer; color: var(--muted); border-bottom: 2px solid transparent; transition: all .2s; }
+.vtab.on { color: var(--cyan); border-bottom-color: var(--cyan); background: var(--bg); }
+.canvas-wrap { flex: 1; position: relative; overflow: hidden; }
+canvas { display: block; width: 100%; height: 100%; }
+
+/* ── 3D FLOATING VISIBILITY PANEL ── */
+#vis3dPanel {
+  position: absolute;
+  top: 46px;
+  left: 12px;
+  width: 228px;
+  background: rgba(10, 28, 46, 0.88);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(0,180,220,0.28);
+  border-radius: 7px;
+  font-family: var(--mono);
+  font-size: 9px;
+  color: rgba(190,220,240,0.95);
+  box-shadow: 0 4px 24px rgba(0,0,0,0.4);
+  z-index: 20;
+  user-select: none;
+  display: none; /* shown only in 3D view */
+  overflow: hidden;
+  min-width: 180px;
+}
+#vis3dPanel.night {
+  background: rgba(4, 12, 22, 0.92);
+  border-color: rgba(0,200,240,0.22);
+}
+.vis3d-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 10px 6px;
+  background: rgba(0,130,180,0.18);
+  border-bottom: 1px solid rgba(0,180,220,0.2);
+  cursor: grab;
+}
+.vis3d-header:active { cursor: grabbing; }
+.vis3d-title {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
+  color: rgba(0,210,255,0.9);
+  flex: 1;
+}
+.vis3d-collapse {
+  width: 18px; height: 18px;
+  background: rgba(0,180,220,0.15);
+  border: 1px solid rgba(0,180,220,0.3);
+  border-radius: 3px;
+  color: rgba(0,210,255,0.8);
+  font-size: 10px;
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+  transition: background .15s;
+}
+.vis3d-collapse:hover { background: rgba(0,180,220,0.3); }
+.vis3d-body { padding: 8px 10px 10px; }
+.vis3d-master {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 0 7px;
+  border-bottom: 1px solid rgba(0,180,220,0.15);
+  margin-bottom: 8px;
+}
+.vis3d-master-lbl {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: .8px;
+  text-transform: uppercase;
+  color: rgba(0,210,255,0.75);
+  flex: 1;
+}
+.vis3d-row {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin-bottom: 6px;
+}
+.vis3d-swatch {
+  width: 9px; height: 9px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  box-shadow: 0 0 4px rgba(0,0,0,0.5);
+}
+.vis3d-name {
+  flex: 1;
+  font-size: 9px;
+  color: rgba(180,210,235,0.9);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.vis3d-opacity {
+  width: 54px;
+  height: 3px;
+  accent-color: #00c8f0;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+/* Custom toggle switch */
+.vis3d-toggle {
+  position: relative;
+  width: 28px; height: 15px;
+  flex-shrink: 0;
+}
+.vis3d-toggle input { opacity: 0; width: 0; height: 0; }
+.vis3d-slider {
+  position: absolute; inset: 0;
+  background: rgba(255,255,255,0.1);
+  border: 1px solid rgba(0,180,220,0.3);
+  border-radius: 10px;
+  cursor: pointer;
+  transition: background .2s;
+}
+.vis3d-slider::before {
+  content: '';
+  position: absolute;
+  width: 9px; height: 9px;
+  left: 2px; top: 2px;
+  background: rgba(120,160,180,0.7);
+  border-radius: 50%;
+  transition: transform .2s, background .2s;
+}
+.vis3d-toggle input:checked + .vis3d-slider {
+  background: rgba(0,150,200,0.35);
+  border-color: rgba(0,210,255,0.5);
+}
+.vis3d-toggle input:checked + .vis3d-slider::before {
+  transform: translateX(13px);
+  background: #00c8f0;
+}
+.vis3d-divider {
+  height: 1px;
+  background: rgba(0,180,220,0.12);
+  margin: 6px 0;
+}
+.vis3d-opacity-row {
+  display: flex; align-items: center; gap: 7px; margin-bottom: 4px;
+}
+.vis3d-opacity-lbl {
+  font-size: 8px;
+  color: rgba(120,160,180,0.8);
+  width: 52px;
+  flex-shrink: 0;
+}
+.vis3d-opacity-val {
+  font-size: 8px;
+  color: rgba(0,210,255,0.7);
+  width: 22px;
+  text-align: right;
+  flex-shrink: 0;
+}
+
+/* Status bar */
+.sbar { height: 20px; background: var(--hdr-bg); border-top: 1px solid var(--bd); display: flex; align-items: center; padding: 0 12px; gap: 14px; font-family: var(--mono); font-size: 9px; flex-shrink: 0; color: var(--muted); }
+.sb-i span { color: var(--cyan); margin-left: 3px; font-weight: 600; }
+
+/* Cement swatches */
+.cement-swatch { width: 22px; height: 22px; border-radius: 3px; cursor: pointer; border: 2px solid transparent; transition: all .15s; }
+.cement-swatch:hover { transform: scale(1.15); }
+.cement-swatch.active { border-color: var(--cyan); box-shadow: 0 0 0 2px var(--cyan-lt); }
+
+/* Cement TOC row in settings */
+.cement-toc-row { display: flex; align-items: center; gap: 7px; padding: 5px 0; border-bottom: 1px solid rgba(176,190,200,.3); }
+.cement-toc-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+.cement-toc-label { font-family: var(--mono); font-size: 9px; flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cement-toc-input { width: 72px !important; height: 22px !important; font-size: 9px !important; flex-shrink: 0; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">⬡ Yova's <span>Well Sketcher</span></div>
+  <div class="hbadge">v3.1</div>
+  <div style="font-family:var(--mono);font-size:9px;color:var(--muted);">Engineering Schematic Format · Dual-String · API Casing DB</div>
+  <div class="hdr-btns">
+    <button class="btn" onclick="toggle3DTheme()" id="dayNightBtn" title="Toggle 3D day/night mode">🌙 Night</button>
+    <button class="btn" onclick="toggleUnits()" id="unitBtnLbl">📐 Metric</button>
+    <button class="btn" onclick="exportPNG()">↓ PNG</button>
+    <button class="btn success" onclick="exportXLSX()">↓ XLSX</button>
+    <button class="btn" onclick="resetZoom()" title="Reset zoom/pan">⊙ Reset Zoom</button>
+  </div>
+</header>
+
+<div class="app">
+<aside class="side">
+  <div class="stabs">
+    <div class="stab on" onclick="showTab('db',this)">Casing DB</div>
+    <div class="stab" onclick="showTab('strings',this)">Strings</div>
+    <div class="stab" onclick="showTab('tubing',this)">Tubing</div>
+    <div class="stab" onclick="showTab('compl',this)">Completion</div>
+    <div class="stab" onclick="showTab('settings',this)">Settings</div>
+  </div>
+  <div class="sb-body">
+
+    <!-- CASING DATABASE -->
+    <div class="tp on" id="tab-db">
+      <div class="sec">
+        <div class="sec-t">Filter</div>
+        <div class="row2">
+          <div><div class="lbl">OD (in)</div><select id="filterOD" onchange="renderDbList()"></select></div>
+          <div><div class="lbl">Grade</div><select id="filterGrade" onchange="renderDbList()"></select></div>
+        </div>
+        <div class="row1"><div class="lbl">Section</div><select id="filterSection" onchange="renderDbList()"></select></div>
+      </div>
+      <div class="sec">
+        <div class="sec-t">Database</div>
+        <div class="db-list" id="dbList">
+          <div class="db-head"><div>OD</div><div>ID</div><div>Grade</div><div>Wt</div><div>Wall</div><div>Section</div></div>
+        </div>
+      </div>
+      <div class="sec">
+        <div class="sec-t">Add as Casing String</div>
+        <div class="row2">
+          <div><div class="lbl">OD (in)</div><input id="selOD" type="number" step="0.001"/></div>
+          <div><div class="lbl">ID (in)</div><input id="selID" type="number" step="0.001"/></div>
+        </div>
+        <div class="row2">
+          <div><div class="lbl" id="lbl-seltop">Top Depth</div><input id="selTop" type="number" value="0"/></div>
+          <div><div class="lbl" id="lbl-selbot">Bottom Depth</div><input id="selBottom" type="number" value="1000"/></div>
+        </div>
+        <div class="row2">
+          <div><div class="lbl">Grade</div><input id="selGrade" type="text"/></div>
+          <div><div class="lbl">Label</div><input id="selLabel" type="text" placeholder="e.g. 13-3/8&quot; Surface"/></div>
+        </div>
+        <div class="row2">
+          <div><div class="lbl">Weight (ppf)</div><input id="selWeight" type="number" step="0.01"/></div>
+          <div><div class="lbl">Connection</div><input id="selConn" type="text" value="BTC" placeholder="BTC"/></div>
+        </div>
+        <button class="btn success w100" onclick="addCasingString()">＋ Add Casing String</button>
+      </div>
+    </div>
+
+    <!-- STRINGS TAB -->
+    <div class="tp" id="tab-strings">
+      <div class="sec">
+        <div class="sec-t">Casing Strings</div>
+        <div id="casingList"><div style="font-size:10px;color:var(--muted);padding:6px 0;">No casing strings added yet.</div></div>
+      </div>
+    </div>
+
+    <!-- TUBING TAB -->
+    <div class="tp" id="tab-tubing">
+      <div class="sec">
+        <div class="sec-t">Short String (SS)</div>
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
+          <div class="str-dot" style="background:#888;"></div>
+          <div style="flex:1;font-size:10px;color:var(--muted);">Left tubing string</div>
+          <input type="checkbox" id="tub1on" checked onchange="renderAll()" style="width:auto;height:auto;accent-color:var(--cyan);">
+        </div>
+        <div class="row2">
+          <div><div class="lbl">OD (in)</div>
+            <select id="tub1OD" onchange="updateTubing1()">
+              <option value="2.375">2.375 (2 3/8")</option>
+              <option value="2.875">2.875 (2 7/8")</option>
+              <option value="3.5" selected>3.5 (3 1/2")</option>
+              <option value="4.0">4.0 (4")</option>
+              <option value="4.5">4.5 (4 1/2")</option>
+            </select>
+          </div>
+          <div><div class="lbl">Weight (ppf)</div><input id="tub1Wt" type="number" value="9.2" step="0.1"/></div>
+        </div>
+        <div class="row2">
+          <div><div class="lbl">Grade</div>
+            <select id="tub1Grade">
+              <option>J-55</option><option>N-80</option><option selected>L-80</option><option>P-110</option><option>H-40</option>
+            </select>
+          </div>
+          <div><div class="lbl">Connection</div><input id="tub1Conn" type="text" value="FOX-K"/></div>
+        </div>
+        <div class="row2">
+          <div><div class="lbl" id="lbl-tub1top">Top Depth</div><input id="tub1Top" type="number" value="0" oninput="renderAll()"/></div>
+          <div><div class="lbl" id="lbl-tub1bot">Bottom Depth</div><input id="tub1Bot" type="number" value="3513" oninput="renderAll()"/></div>
+        </div>
+        <div class="row1"><div class="lbl">Label</div><input id="tub1Label" type="text" value="SHORT STRING" oninput="renderAll()"/></div>
+      </div>
+      <div class="sec">
+        <div class="sec-t">Long String (LS)</div>
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
+          <div class="str-dot" style="background:#666;"></div>
+          <div style="flex:1;font-size:10px;color:var(--muted);">Right tubing string</div>
+          <input type="checkbox" id="tub2on" checked onchange="renderAll()" style="width:auto;height:auto;accent-color:var(--cyan);">
+        </div>
+        <div class="row2">
+          <div><div class="lbl">OD (in)</div>
+            <select id="tub2OD" onchange="updateTubing2()">
+              <option value="2.375">2.375 (2 3/8")</option>
+              <option value="2.875">2.875 (2 7/8")</option>
+              <option value="3.5" selected>3.5 (3 1/2")</option>
+              <option value="4.0">4.0 (4")</option>
+            </select>
+          </div>
+          <div><div class="lbl">Weight (ppf)</div><input id="tub2Wt" type="number" value="9.2" step="0.1"/></div>
+        </div>
+        <div class="row2">
+          <div><div class="lbl">Grade</div>
+            <select id="tub2Grade">
+              <option>H-40</option><option>J-55</option><option>N-80</option><option selected>L-80</option><option>P-110</option>
+            </select>
+          </div>
+          <div><div class="lbl">Connection</div><input id="tub2Conn" type="text" value="FOX-K"/></div>
+        </div>
+        <div class="row2">
+          <div><div class="lbl" id="lbl-tub2top">Top Depth</div><input id="tub2Top" type="number" value="0" oninput="renderAll()"/></div>
+          <div><div class="lbl" id="lbl-tub2bot">Bottom Depth</div><input id="tub2Bot" type="number" value="3761" oninput="renderAll()"/></div>
+        </div>
+        <div class="row1"><div class="lbl">Label</div><input id="tub2Label" type="text" value="LONG STRING" oninput="renderAll()"/></div>
+      </div>
+    </div>
+
+    <!-- COMPLETION ELEMENTS -->
+    <div class="tp" id="tab-compl">
+      <div class="sec">
+        <div class="sec-t">Add Element</div>
+        <div class="row2">
+          <div><div class="lbl">Element Type</div>
+            <select id="elemType">
+              <option value="packer">Packer (Dual HYD)</option>
+              <option value="packer_single">Packer (Single HYD)</option>
+              <option value="packer_perm">Packer (Permanent)</option>
+              <option value="spm">GLM / Gas Lift Mandrel</option>
+              <option value="xsd">XSD Sliding Sleeve</option>
+              <option value="nipple">X-Nipple</option>
+              <option value="nipple_xn">XN-Nipple</option>
+              <option value="dhsv">DHSV</option>
+              <option value="flow_coupling">Flow Coupling</option>
+              <option value="blast_joint">Blast Joint</option>
+              <option value="travel_joint">Travel Joint</option>
+              <option value="pop_assy">POP ASSY</option>
+              <option value="plug">Plug / EOT</option>
+            </select>
+          </div>
+          <div><div class="lbl">Tubing String</div>
+            <select id="elemTubing">
+              <option value="1">Short String</option>
+              <option value="2">Long String</option>
+              <option value="both">Both</option>
+            </select>
+          </div>
+        </div>
+        <div class="row2">
+          <div><div class="lbl" id="lbl-elemdepth">Depth (m)</div><input id="elemDepth" type="number" value="500"/></div>
+          <div><div class="lbl">INC (°)</div><input id="elemInc" type="number" value="0" step="0.5"/></div>
+        </div>
+        <div class="row2">
+          <div><div class="lbl">Length (m)</div><input id="elemLength" type="number" value="3" step="0.5" min="0.5"/></div>
+          <div></div>
+        </div>
+        <div class="row2">
+          <div><div class="lbl">Min OD (in)</div><input id="elemMinOD" type="number" value="2.813" step="0.001"/></div>
+          <div><div class="lbl">Max OD (in)</div><input id="elemMaxOD" type="number" value="4.550" step="0.001"/></div>
+        </div>
+        <div class="row1"><div class="lbl">Label</div><input id="elemLabel" type="text" placeholder="e.g. 9 5/8&quot; BHD HYD DUAL PKR"/></div>
+        <button class="btn success w100" onclick="addElement()">＋ Add Element</button>
+      </div>
+      <div class="sec">
+        <div class="sec-t">Placed Elements</div>
+        <div id="elemList"><div style="font-size:10px;color:var(--muted);padding:4px 0;">No elements added yet.</div></div>
+      </div>
+    </div>
+
+    <!-- SETTINGS TAB -->
+    <div class="tp" id="tab-settings">
+      <div class="sec">
+        <div class="sec-t">Cement Heights</div>
+        <div style="font-size:9px;color:var(--muted);margin-bottom:8px;line-height:1.5;">
+          Set the top of cement (TOC) for each casing string. Cement is shaded from TOC down to the casing shoe in the schematic.
+        </div>
+        <div id="cementHeightList"><div style="font-size:10px;color:var(--muted);padding:4px 0;">No casing strings added yet.</div></div>
+        <div style="margin-top:8px;display:flex;align-items:center;gap:8px;">
+          <label style="display:flex;align-items:center;gap:6px;font-family:var(--mono);font-size:9px;color:var(--muted);cursor:pointer;">
+            <input type="checkbox" id="showCementAnnotations" checked onchange="renderAll()" style="width:auto;height:auto;accent-color:var(--cyan);">
+            Show cement labels
+          </label>
+        </div>
+      </div>
+      <div class="sec">
+        <div class="sec-t">Cement Style</div>
+        <div class="row2">
+          <div>
+            <div class="lbl">Pattern</div>
+            <select id="cementPattern" onchange="renderAll()">
+              <option value="solid">Solid fill</option>
+              <option value="hatch" selected>Diagonal hatch</option>
+              <option value="cross">Cross hatch</option>
+              <option value="dots">Stipple dots</option>
+            </select>
+          </div>
+          <div>
+            <div class="lbl">Opacity (%)</div>
+            <input id="cementOpacity2d" type="number" value="38" min="5" max="90" step="1" oninput="renderAll()"/>
+          </div>
+        </div>
+        <div class="row1">
+          <div class="lbl">Cement Color</div>
+          <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:4px;" id="cementColorSwatches">
+            <div class="cement-swatch active" data-color="#c8aa60" style="background:#c8aa60;" onclick="setCementColor('#c8aa60',this)" title="Classic tan"></div>
+            <div class="cement-swatch" data-color="#b0b8c0" style="background:#b0b8c0;" onclick="setCementColor('#b0b8c0',this)" title="Grey"></div>
+            <div class="cement-swatch" data-color="#d4b896" style="background:#d4b896;" onclick="setCementColor('#d4b896',this)" title="Light tan"></div>
+            <div class="cement-swatch" data-color="#8aa888" style="background:#8aa888;" onclick="setCementColor('#8aa888',this)" title="Green-grey"></div>
+            <div class="cement-swatch" data-color="#a89070" style="background:#a89070;" onclick="setCementColor('#a89070',this)" title="Dark tan"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sec">
+        <div class="sec-t">Well Settings</div>
+        <div class="row2">
+          <div><div class="lbl" id="lbl-maxdepth">Max Depth (m)</div><input id="wellDepth" type="number" value="4300" oninput="renderAll()"/></div>
+          <div><div class="lbl">Well Name</div><input id="wellName" type="text" value="WELL-A" oninput="renderAll()"/></div>
+        </div>
+        <div class="row2">
+          <div><div class="lbl">Field</div><input id="wellField" type="text" value="Field X" oninput="renderAll()"/></div>
+          <div><div class="lbl">Depth Datum</div>
+            <select id="wellDatum" onchange="renderAll()">
+              <option value="MDDF">m MDDF</option>
+              <option value="TVD">m TVD</option>
+              <option value="ft_MD">ft MD</option>
+            </select>
+          </div>
+        </div>
+      </div>
+      <div class="sec">
+        <div class="sec-t">Formation Zones</div>
+        <div id="zoneList"><div style="font-size:10px;color:var(--muted);">No zones defined.</div></div>
+        <div style="margin-top:8px;">
+          <div class="row2">
+            <div><div class="lbl">Zone Name</div><input id="znName" type="text" value="I-39L RES"/></div>
+            <div><div class="lbl">Reservoir Pressure</div><input id="znPres" type="number" value="2183"/></div>
+          </div>
+          <div class="row2">
+            <div><div class="lbl">Top Perf (m)</div><input id="znTop" type="number" value="3372"/></div>
+            <div><div class="lbl">Btm Perf (m)</div><input id="znBot" type="number" value="3408"/></div>
+          </div>
+          <button class="btn success w100" onclick="addZone()">＋ Add Formation Zone</button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</aside>
+
+<div class="main-view">
+  <div class="vtabs">
+    <div class="vtab on" id="vt-2d" onclick="switchView('2d')">Engineering Schematic</div>
+    <div class="vtab" id="vt-tbl" onclick="switchView('tbl')">Equipment Table</div>
+    <div class="vtab" id="vt-3d" onclick="switchView('3d')">3D View</div>
+  </div>
+  <div class="canvas-wrap" id="wrap2d">
+    <canvas id="canvas2d"></canvas>
+  </div>
+  <div class="canvas-wrap" id="wrap-tbl" style="display:none;overflow:auto;background:var(--bg);">
+    <div id="tblContent" style="padding:16px;font-family:var(--mono);font-size:10px;"></div>
+  </div>
+  <div class="canvas-wrap" id="wrap3d" style="display:none;position:relative;background:#dde6ef;">
+    <canvas id="canvas3d" style="width:100%;height:100%;display:block;"></canvas>
+    <div id="hud3d" style="position:absolute;top:10px;right:12px;font-family:var(--mono);font-size:9px;color:rgba(0,80,120,0.85);text-align:right;pointer-events:none;line-height:1.8;background:rgba(255,255,255,0.55);padding:4px 8px;border-radius:4px;">
+      Left-drag: Rotate &nbsp;|&nbsp; Right-drag / Shift: Pan<br>Scroll: Zoom &nbsp;|&nbsp; Double-click: Reset
+    </div>
+    <div id="legend3d" style="position:absolute;bottom:10px;left:10px;font-family:var(--mono);font-size:8px;color:rgba(5,40,70,0.9);pointer-events:none;background:rgba(255,255,255,0.72);padding:5px 8px;border-radius:4px;"></div>
+
+    <!-- Floating Casing Visibility Panel -->
+    <div id="vis3dPanel">
+      <div class="vis3d-header" id="vis3dDragHandle">
+        <span style="font-size:11px;opacity:.7;">⊞</span>
+        <div class="vis3d-title">Casing Visibility</div>
+        <div class="vis3d-collapse" id="vis3dCollapseBtn" onclick="toggleVis3dCollapse()" title="Collapse/expand">−</div>
+      </div>
+      <div class="vis3d-body" id="vis3dBody">
+        <!-- Global opacity controls -->
+        <div class="vis3d-opacity-row">
+          <div class="vis3d-opacity-lbl">Casing opac.</div>
+          <input type="range" class="vis3d-opacity" id="globalCasingOpacity" min="5" max="100" value="78"
+            oninput="updateGlobalCasingOpacity(this.value)" style="flex:1;">
+          <div class="vis3d-opacity-val" id="globalCasingOpacityVal">78%</div>
+        </div>
+        <div class="vis3d-opacity-row" style="margin-bottom:8px;">
+          <div class="vis3d-opacity-lbl">Cement opac.</div>
+          <input type="range" class="vis3d-opacity" id="globalCementOpacity" min="0" max="60" value="28"
+            oninput="updateGlobalCementOpacity(this.value)" style="flex:1;">
+          <div class="vis3d-opacity-val" id="globalCementOpacityVal">28%</div>
+        </div>
+        <div class="vis3d-divider"></div>
+        <!-- Master toggle -->
+        <div class="vis3d-master">
+          <div class="vis3d-master-lbl">All Casings</div>
+          <label class="vis3d-toggle" title="Show/hide all casings">
+            <input type="checkbox" id="masterCasingToggle" checked onchange="masterToggleCasings3d(this.checked)">
+            <span class="vis3d-slider"></span>
+          </label>
+        </div>
+        <!-- Per-casing rows injected here -->
+        <div id="vis3dCasingRows"></div>
+        <!-- Tubing section -->
+        <div class="vis3d-divider" style="margin-top:8px;"></div>
+        <div class="vis3d-master" style="margin-top:6px;">
+          <div class="vis3d-master-lbl">Tubing Strings</div>
+        </div>
+        <div id="vis3dTubingRows"></div>
+      </div>
+    </div>
+  </div>
+  <div class="sbar">
+    <div class="sb-i">Strings:<span id="sbStrings">0</span></div>
+    <div style="color:var(--bd)">|</div>
+    <div class="sb-i">Max Depth:<span id="sbDepth">—</span></div>
+    <div style="color:var(--bd)">|</div>
+    <div class="sb-i">Tubing:<span id="sbTubing">None</span></div>
+    <div style="color:var(--bd)">|</div>
+    <div class="sb-i">Elements:<span id="sbElems">0</span></div>
+    <div style="color:var(--bd)">|</div>
+    <div class="sb-i">Zoom:<span id="sbZoom">100%</span></div>
+  </div>
+</div>
+</div>
+
+<script>
+/* ══════════════════════════════════════════
+   POLYFILL: CanvasRenderingContext2D.roundRect
+══════════════════════════════════════════ */
+if(!CanvasRenderingContext2D.prototype.roundRect){
+  CanvasRenderingContext2D.prototype.roundRect = function(x,y,w,h,r){
+    r = Math.min(r, w/2, h/2);
+    this.beginPath();
+    this.moveTo(x+r, y);
+    this.lineTo(x+w-r, y);
+    this.arcTo(x+w, y, x+w, y+r, r);
+    this.lineTo(x+w, y+h-r);
+    this.arcTo(x+w, y+h, x+w-r, y+h, r);
+    this.lineTo(x+r, y+h);
+    this.arcTo(x, y+h, x, y+h-r, r);
+    this.lineTo(x, y+r);
+    this.arcTo(x, y, x+r, y, r);
+    this.closePath();
+  };
+}
+
+/* ══════════════════════════════════════════
+   UNIT SYSTEM
+══════════════════════════════════════════ */
+let useImperial = false; // default metric to match the image
+const M_TO_FT = 3.28084, FT_TO_M = 1/3.28084;
+function toDisplay(m){ return useImperial ? Math.round(m*M_TO_FT*10)/10 : Math.round(m*10)/10; }
+function fromDisplay(v){ return useImperial ? Math.round(v*FT_TO_M*100)/100 : v; }
+function unitLabel(){ return useImperial ? 'ft' : 'm'; }
+function datumLabel(){ return document.getElementById('wellDatum')?.value || 'm MDDF'; }
+
+function updateAllUnitLabels(){
+  const u=unitLabel();
+  [['lbl-maxdepth','Max Depth ('+u+')'],['lbl-seltop','Top Depth ('+u+')'],
+   ['lbl-selbot','Bottom Depth ('+u+')'],['lbl-tub1top','Top Depth ('+u+')'],
+   ['lbl-tub1bot','Bottom Depth ('+u+')'],['lbl-tub2top','Top Depth ('+u+')'],
+   ['lbl-tub2bot','Bottom Depth ('+u+')'],['lbl-elemdepth','Depth ('+u+')']
+  ].forEach(([id,txt])=>{ const el=document.getElementById(id); if(el)el.textContent=txt; });
+}
+
+function toggleUnits(){
+  const factor=useImperial?FT_TO_M:M_TO_FT;
+  ['selTop','selBottom','wellDepth','tub1Top','tub1Bot','tub2Top','tub2Bot','elemDepth','znTop','znBot']
+    .forEach(id=>{ const el=document.getElementById(id); if(el&&el.value!=='') el.value=Math.round(parseFloat(el.value)*factor*10)/10; });
+  useImperial=!useImperial;
+  document.getElementById('unitBtnLbl').textContent=useImperial?'📐 Metric':'📐 Imperial';
+  updateAllUnitLabels();
+  buildStringCards(); buildElemCards(); renderAll();
+}
+
+/* ══════════════════════════════════════════
+   FULL CASING TABLE
+══════════════════════════════════════════ */
+const CASING_TABLE=[
+  [2.375,2.041,"H-40",4.0,0.167,"Tubing 2 3/8 to 4 1/2"],[2.375,1.995,"H-40",4.6,0.19,"Tubing 2 3/8 to 4 1/2"],
+  [2.375,2.041,"J-55",4.0,0.167,"Tubing 2 3/8 to 4 1/2"],[2.375,1.995,"J-55",4.6,0.19,"Tubing 2 3/8 to 4 1/2"],
+  [2.375,2.041,"C-75",4.0,0.167,"Tubing 2 3/8 to 4 1/2"],[2.375,1.995,"C-75",4.6,0.19,"Tubing 2 3/8 to 4 1/2"],
+  [2.375,1.867,"C-75",5.8,0.254,"Tubing 2 3/8 to 4 1/2"],[2.375,2.041,"N-80",4.0,0.167,"Tubing 2 3/8 to 4 1/2"],
+  [2.375,1.995,"N-80",4.6,0.19,"Tubing 2 3/8 to 4 1/2"],[2.375,1.867,"N-80",5.8,0.254,"Tubing 2 3/8 to 4 1/2"],
+  [2.875,2.441,"J-55",6.4,0.217,"Tubing 2 3/8 to 4 1/2"],[2.875,2.441,"N-80",6.4,0.217,"Tubing 2 3/8 to 4 1/2"],
+  [3.5,2.992,"J-55",7.7,0.254,"Tubing 2 3/8 to 4 1/2"],[3.5,2.992,"N-80",7.7,0.254,"Tubing 2 3/8 to 4 1/2"],
+  [3.5,2.992,"L-80",9.2,0.254,"Tubing 2 3/8 to 4 1/2"],[3.5,2.922,"L-80",9.3,0.289,"Tubing 2 3/8 to 4 1/2"],
+  [4.0,3.476,"J-55",9.5,0.262,"Tubing 2 3/8 to 4 1/2"],[4.0,3.476,"N-80",9.5,0.262,"Tubing 2 3/8 to 4 1/2"],
+  [4.5,3.958,"J-55",10.5,0.271,"Tubing 2 3/8 to 4 1/2"],[4.5,3.826,"N-80",12.75,0.337,"Tubing 2 3/8 to 4 1/2"],
+  [4.5,4.09,"K-55",9.5,0.205,"Casing 4 to 5 1/2"],[4.5,4.0,"N-80",11.6,0.25,"Casing 4 to 5 1/2"],
+  [5.0,4.408,"K-55",13.0,0.296,"Casing 4 to 5 1/2"],[5.0,4.276,"N-80",15.0,0.362,"Casing 4 to 5 1/2"],
+  [5.5,5.012,"K-55",14.0,0.244,"Casing 4 to 5 1/2"],[5.5,4.892,"N-80",17.0,0.304,"Casing 4 to 5 1/2"],
+  [5.5,4.778,"P-110",20.0,0.361,"Casing 4 to 5 1/2"],[5.5,4.67,"P-110",23.0,0.415,"Casing 4 to 5 1/2"],
+  [7.0,6.456,"K-55",20.0,0.272,"Casing 6 5/8 to 7"],[7.0,6.366,"N-80",23.0,0.317,"Casing 6 5/8 to 7"],
+  [7.0,6.276,"P-110",26.0,0.362,"Casing 6 5/8 to 7"],[7.0,6.184,"P-110",29.0,0.408,"Casing 6 5/8 to 7"],
+  [7.625,7.025,"K-55",24.0,0.3,"Casing 7 5/8 to 9 5/8"],[7.625,6.969,"N-80",26.4,0.328,"Casing 7 5/8 to 9 5/8"],
+  [7.625,6.875,"P-110",29.7,0.375,"Casing 7 5/8 to 9 5/8"],
+  [9.625,8.921,"K-55",36.0,0.352,"Casing 7 5/8 to 9 5/8"],[9.625,8.835,"N-80",40.0,0.395,"Casing 7 5/8 to 9 5/8"],
+  [9.625,8.755,"P-110",43.5,0.435,"Casing 7 5/8 to 9 5/8"],[9.625,8.681,"N-80",47.0,0.472,"Casing 7 5/8 to 9 5/8"],
+  [10.75,10.05,"K-55",40.5,0.35,"Casing 10 3/4 to 20"],[10.75,9.85,"N-80",51.0,0.45,"Casing 10 3/4 to 20"],
+  [13.375,12.615,"K-55",48.0,0.38,"Casing 10 3/4 to 20"],[13.375,12.515,"N-80",54.5,0.43,"Casing 10 3/4 to 20"],
+  [13.375,12.415,"N-80",61.0,0.48,"Casing 10 3/4 to 20"],[13.375,12.275,"P-110",68.0,0.55,"Casing 10 3/4 to 20"],
+  [16.0,15.124,"K-55",65.0,0.438,"Casing 10 3/4 to 20"],[16.0,15.0,"K-55",75.0,0.5,"Casing 10 3/4 to 20"],
+  [20.0,19.0,"K-55",106.5,0.5,"Casing 10 3/4 to 20"]
+];
+
+const STR_COLORS=['#00829c','#4a7c9a','#2e6b88','#1a5570','#0d4460','#006080'];
+
+/* ══════════════════════════════════════════
+   STATE
+══════════════════════════════════════════ */
+let casingStrings=[];
+let completionElems=[];
+let formationZones=[];
+let selectedDbIdx=0;
+
+const TUBING_OD_TO_ID={'2.375':2.041,'2.875':2.441,'3.5':2.992,'4.0':3.476,'4.5':3.826};
+function getTubingID(odStr){ return TUBING_OD_TO_ID[odStr]||parseFloat(odStr)*0.86; }
+
+/* ══════════════════════════════════════════
+   ELEMENT METADATA — engineering symbols
+══════════════════════════════════════════ */
+const ELEM_META={
+  packer:        {label:'Dual HYD Packer',      color:'#222222', shape:'packer_dual'},
+  packer_single: {label:'Single HYD Packer',    color:'#333333', shape:'packer_single'},
+  packer_perm:   {label:'Permanent Packer',      color:'#111111', shape:'packer_perm'},
+  spm:           {label:'GLM / Gas Lift Mandrel',color:'#2e7d32', shape:'glm'},
+  xsd:           {label:'XSD Sliding Sleeve',   color:'#1565c0', shape:'xsd'},
+  nipple:        {label:'X-Nipple',              color:'#555555', shape:'nipple'},
+  nipple_xn:     {label:'XN-Nipple',             color:'#555555', shape:'nipple'},
+  dhsv:          {label:'DHSV',                  color:'#b71c1c', shape:'dhsv'},
+  flow_coupling: {label:'Flow Coupling',         color:'#e65100', shape:'flow_coupling'},
+  blast_joint:   {label:'Blast Joint',           color:'#880e4f', shape:'blast_joint'},
+  travel_joint:  {label:'Travel Joint',          color:'#4527a0', shape:'travel_joint'},
+  pop_assy:      {label:'POP ASSY',              color:'#00695c', shape:'pop_assy'},
+  plug:          {label:'Plug / EOT',            color:'#212121', shape:'plug'}
+};
+
+/* ══════════════════════════════════════════
+   DB FILTER & RENDER
+══════════════════════════════════════════ */
+function initFilters(){
+  const ods=[...new Set(CASING_TABLE.map(r=>r[0]))].sort((a,b)=>a-b);
+  const grades=[...new Set(CASING_TABLE.map(r=>r[2]))].sort();
+  const sects=[...new Set(CASING_TABLE.map(r=>r[5]))].sort();
+  document.getElementById('filterOD').innerHTML='<option value="">All OD</option>'+ods.map(v=>`<option value="${v}">${v}"</option>`).join('');
+  document.getElementById('filterGrade').innerHTML='<option value="">All Grades</option>'+grades.map(v=>`<option value="${v}">${v}</option>`).join('');
+  document.getElementById('filterSection').innerHTML='<option value="">All Sections</option>'+sects.map(v=>`<option value="${v}">${v}</option>`).join('');
+}
+
+function filteredDb(){
+  const od=parseFloat(document.getElementById('filterOD').value)||null;
+  const gr=document.getElementById('filterGrade').value;
+  const sc=document.getElementById('filterSection').value;
+  return CASING_TABLE.map((r,i)=>({r,i})).filter(({r})=>{
+    if(od&&r[0]!==od)return false;
+    if(gr&&r[2]!==gr)return false;
+    if(sc&&r[5]!==sc)return false;
+    return true;
+  });
+}
+
+function renderDbList(){
+  const list=filteredDb();
+  const cont=document.getElementById('dbList');
+  cont.innerHTML=`<div class="db-head"><div>OD</div><div>ID</div><div>Grade</div><div>Wt</div><div>Wall</div><div>Section</div></div>`
+    +list.map(({r,i})=>`<div class="db-row${i===selectedDbIdx?' active':''}" onclick="selectDb(${i})">
+      <div>${r[0]}"</div><div>${r[1]}"</div><div>${r[2]}</div><div>${r[3]}</div><div>${r[4]}"</div>
+      <div style="overflow:hidden;white-space:nowrap;text-overflow:ellipsis;">${r[5].replace('Casing ','').replace('Tubing ','T/')}</div>
+    </div>`).join('');
+  if(list.length&&!list.some(({i})=>i===selectedDbIdx)) selectDb(list[0].i);
+}
+
+function selectDb(idx){
+  selectedDbIdx=idx;
+  const r=CASING_TABLE[idx];
+  document.getElementById('selOD').value=r[0];
+  document.getElementById('selID').value=r[1];
+  document.getElementById('selGrade').value=r[2];
+  document.getElementById('selWeight').value=r[3];
+  document.getElementById('selLabel').value=`${r[5].includes('Tubing')?'Tubing':'Casing'} ${r[0]}"`;
+  renderDbList();
+}
+
+/* ══════════════════════════════════════════
+   CEMENT STATE
+══════════════════════════════════════════ */
+let _cementColor = '#c8aa60';
+
+function setCementColor(hex, el){
+  _cementColor = hex;
+  document.querySelectorAll('.cement-swatch').forEach(s=>s.classList.remove('active'));
+  if(el) el.classList.add('active');
+  renderAll();
+}
+
+function getCementOpacity2d(){
+  const v = parseInt(document.getElementById('cementOpacity2d')?.value || 38);
+  return Math.max(5, Math.min(90, v)) / 100;
+}
+
+function getCementPattern(){
+  return document.getElementById('cementPattern')?.value || 'hatch';
+}
+
+/* Build the cement height list in Settings tab */
+function buildCementHeightList(){
+  const cont = document.getElementById('cementHeightList');
+  if(!cont) return;
+  if(!casingStrings.length){
+    cont.innerHTML = '<div style="font-size:10px;color:var(--muted);padding:4px 0;">No casing strings added yet.</div>';
+    return;
+  }
+  cont.innerHTML = casingStrings.map((s,i) => {
+    // Default cementTop = casing.top (cemented to surface)
+    if(s.cementTop === undefined || s.cementTop === null) s.cementTop = s.top;
+    const dispTOC = toDisplay(s.cementTop);
+    const dispShoe = toDisplay(s.bottom);
+    return `<div class="cement-toc-row">
+      <div class="cement-toc-dot" style="background:${s.color};"></div>
+      <div class="cement-toc-label" title="${s.label}">${s.od}" — ${s.label}</div>
+      <div style="font-family:var(--mono);font-size:8px;color:var(--muted);white-space:nowrap;">TOC&nbsp;</div>
+      <input class="cement-toc-input" type="number" value="${dispTOC}" step="10"
+        oninput="setCasingCementTop(${i}, this.value)"
+        title="Top of cement for ${s.label} (shoe at ${dispShoe} ${unitLabel()})"/>
+      <div style="font-family:var(--mono);font-size:8px;color:var(--muted);">${unitLabel()}</div>
+    </div>`;
+  }).join('');
+}
+
+function setCasingCementTop(i, val){
+  if(casingStrings[i]){
+    casingStrings[i].cementTop = fromDisplay(parseFloat(val) || 0);
+    renderAll();
+  }
+}
+
+/* Draw cement fill for a casing string in 2D */
+function drawCement2D(ctx, cx, cementTopY, shoeY, outerHalfOD, innerHalfOD, color, opacity, pattern){
+  if(shoeY <= cementTopY) return;
+  const wallW = outerHalfOD - innerHalfOD;
+  if(wallW < 1) return;
+
+  ctx.save();
+  ctx.globalAlpha = opacity;
+
+  // Left annulus strip: from -outerHalfOD to -innerHalfOD
+  // Right annulus strip: from +innerHalfOD to +outerHalfOD
+  const strips = [
+    { x: cx - outerHalfOD, w: wallW },
+    { x: cx + innerHalfOD, w: wallW }
+  ];
+
+  strips.forEach(({x, w}) => {
+    if(pattern === 'solid'){
+      ctx.fillStyle = color;
+      ctx.fillRect(x, cementTopY, w, shoeY - cementTopY);
+    } else {
+      // Draw solid base first
+      ctx.fillStyle = color;
+      ctx.fillRect(x, cementTopY, w, shoeY - cementTopY);
+
+      // Clip to strip then draw pattern lines
+      ctx.save();
+      ctx.beginPath();
+      ctx.rect(x, cementTopY, w, shoeY - cementTopY);
+      ctx.clip();
+
+      ctx.strokeStyle = 'rgba(0,0,0,0.28)';
+      ctx.lineWidth = 0.8;
+      ctx.setLineDash([]);
+
+      const step = pattern === 'dots' ? 6 : 7;
+      const h = shoeY - cementTopY;
+
+      if(pattern === 'hatch'){
+        // Diagonal lines /
+        for(let k = -h; k < w + h; k += step){
+          ctx.beginPath();
+          ctx.moveTo(x + k, cementTopY);
+          ctx.lineTo(x + k + h, cementTopY + h);
+          ctx.stroke();
+        }
+      } else if(pattern === 'cross'){
+        // Diagonals / and \
+        for(let k = -h; k < w + h; k += step){
+          ctx.beginPath();
+          ctx.moveTo(x + k, cementTopY);
+          ctx.lineTo(x + k + h, cementTopY + h);
+          ctx.stroke();
+          ctx.beginPath();
+          ctx.moveTo(x + k + h, cementTopY);
+          ctx.lineTo(x + k, cementTopY + h);
+          ctx.stroke();
+        }
+      } else if(pattern === 'dots'){
+        ctx.fillStyle = 'rgba(0,0,0,0.3)';
+        for(let dy = cementTopY + 4; dy < shoeY; dy += step){
+          for(let dx = x + 3; dx < x + w; dx += step){
+            ctx.beginPath();
+            ctx.arc(dx, dy, 0.9, 0, Math.PI*2);
+            ctx.fill();
+          }
+        }
+      }
+      ctx.restore();
+    }
+  });
+
+  ctx.restore();
+}
+
+/* ══════════════════════════════════════════
+   CASING STRINGS
+══════════════════════════════════════════ */
+function addCasingString(){
+  const od=parseFloat(document.getElementById('selOD').value)||0;
+  const id=parseFloat(document.getElementById('selID').value)||0;
+  const top=fromDisplay(parseFloat(document.getElementById('selTop').value)||0);
+  const bottom=fromDisplay(parseFloat(document.getElementById('selBottom').value)||1000);
+  const grade=document.getElementById('selGrade').value;
+  const weight=parseFloat(document.getElementById('selWeight').value)||0;
+  const conn=document.getElementById('selConn').value||'BTC';
+  const label=document.getElementById('selLabel').value||`Casing ${od}"`;
+  if(!od||!id){alert('Select a casing from the database first.');return;}
+  casingStrings.push({od,id,grade,weight,conn,top,bottom,label,color:STR_COLORS[casingStrings.length%STR_COLORS.length],cementTop:top});
+  casingStrings.sort((a,b)=>b.od-a.od);
+  buildStringCards(); buildCementHeightList(); renderAll();
+}
+function removeCasing(i){casingStrings.splice(i,1);buildStringCards();buildCementHeightList();renderAll();}
+function buildStringCards(){
+  const cont=document.getElementById('casingList');
+  if(!casingStrings.length){cont.innerHTML='<div style="font-size:10px;color:var(--muted);padding:6px 0;">No casing strings added yet.</div>';return;}
+  cont.innerHTML=casingStrings.map((s,i)=>`
+    <div class="str-card" style="opacity:${s.visible3d===false?'0.5':'1'};">
+      <div class="str-card-hdr">
+        <div class="str-dot" style="background:${s.color};"></div>
+        <div class="str-title">${s.label}</div>
+        <div class="str-badge" style="color:${s.color};border-color:${s.color};">${s.grade}</div>
+        <button class="btn" title="Toggle 3D visibility" style="height:20px;padding:0 6px;font-size:11px;${s.visible3d===false?'color:#aaa;border-color:#ccc;':''}" onclick="toggleCasingVis3d(${i})">${s.visible3d===false?'🙈':'👁️'}</button>
+        <button class="btn danger" style="height:20px;padding:0 6px;font-size:9px;" onclick="removeCasing(${i})">✕</button>
+      </div>
+      <div class="str-rows">
+        <div><div class="str-f">OD / ID</div><div class="str-v">${s.od}" / ${s.id}"</div></div>
+        <div><div class="str-f">Weight</div><div class="str-v">${s.weight} ppf</div></div>
+        <div><div class="str-f">Top / Bottom</div><div class="str-v">${toDisplay(s.top)}–${toDisplay(s.bottom)} ${unitLabel()}</div></div>
+        <div><div class="str-f">Connection</div><div class="str-v">${s.conn}</div></div>
+      </div>
+    </div>`).join('');
+  // Add toggle-all button if strings exist
+  if(casingStrings.length){
+    const allVis = casingStrings.every(s=>s.visible3d!==false);
+    cont.innerHTML += `<div style="margin-top:6px;"><button class="btn w100" style="font-size:9px;" onclick="toggleAllCasings3d()">${allVis?'🙈 Hide All in 3D':'👁️ Show All in 3D'}</button></div>`;
+  }
+  buildCementHeightList();
+}
+
+/* ══════════════════════════════════════════
+   COMPLETION ELEMENTS
+══════════════════════════════════════════ */
+function addElement(){
+  const type=document.getElementById('elemType').value;
+  const depth=fromDisplay(parseFloat(document.getElementById('elemDepth').value)||0);
+  const inc=parseFloat(document.getElementById('elemInc').value)||0;
+  const minOD=parseFloat(document.getElementById('elemMinOD').value)||2.813;
+  const maxOD=parseFloat(document.getElementById('elemMaxOD').value)||4.5;
+  const tubingStr=document.getElementById('elemTubing').value;
+  const label=document.getElementById('elemLabel').value||ELEM_META[type].label;
+  const length=parseFloat(document.getElementById('elemLength').value)||2; // stored in meters, no unit conversion
+  completionElems.push({type,depth,inc,minOD,maxOD,tubingStr,label,length});
+  completionElems.sort((a,b)=>a.depth-b.depth);
+  buildElemCards(); renderAll();
+}
+function removeElem(i){completionElems.splice(i,1);buildElemCards();renderAll();}
+function buildElemCards(){
+  const cont=document.getElementById('elemList');
+  if(!completionElems.length){cont.innerHTML='<div style="font-size:10px;color:var(--muted);padding:4px 0;">No elements added yet.</div>';return;}
+  cont.innerHTML=completionElems.map((e,i)=>{
+    const m=ELEM_META[e.type]||ELEM_META.nipple;
+    return `<div class="elem-card">
+      <div class="elem-icon" style="background:${m.color}22;color:${m.color};">▪</div>
+      <div class="elem-info">
+        <div class="elem-name" style="color:${m.color};">${e.label}</div>
+        <div class="elem-meta">${toDisplay(e.depth)} ${unitLabel()} · ${e.tubingStr==='both'?'Both':e.tubingStr==='1'?'SS':'LS'} · OD ${e.maxOD}"</div>
+      </div>
+      <button class="elem-del" onclick="removeElem(${i})">✕</button>
+    </div>`;
+  }).join('');
+}
+
+/* ══════════════════════════════════════════
+   FORMATION ZONES
+══════════════════════════════════════════ */
+function addZone(){
+  const name=document.getElementById('znName').value||'Zone';
+  const pressure=parseFloat(document.getElementById('znPres').value)||0;
+  const top=fromDisplay(parseFloat(document.getElementById('znTop').value)||0);
+  const bot=fromDisplay(parseFloat(document.getElementById('znBot').value)||100);
+  formationZones.push({name,pressure,top,bot});
+  buildZoneList(); renderAll();
+}
+function removeZone(i){formationZones.splice(i,1);buildZoneList();renderAll();}
+function buildZoneList(){
+  const cont=document.getElementById('zoneList');
+  if(!formationZones.length){cont.innerHTML='<div style="font-size:10px;color:var(--muted);">No zones defined.</div>';return;}
+  cont.innerHTML=formationZones.map((z,i)=>`
+    <div style="display:flex;align-items:center;gap:6px;padding:4px 0;border-bottom:1px solid var(--bd);font-family:var(--mono);font-size:9px;">
+      <div style="flex:1;"><div style="font-weight:600;">${z.name}</div><div style="color:var(--muted);">${toDisplay(z.top)}–${toDisplay(z.bot)} ${unitLabel()} · ${z.pressure} psi</div></div>
+      <button class="elem-del" onclick="removeZone(${i})">✕</button>
+    </div>`).join('');
+}
+
+/* ══════════════════════════════════════════
+   VIEW SWITCH / TABS
+══════════════════════════════════════════ */
+function showTab(id,el){
+  document.querySelectorAll('.tp').forEach(p=>p.classList.remove('on'));
+  document.querySelectorAll('.stab').forEach(t=>t.classList.remove('on'));
+  document.getElementById('tab-'+id).classList.add('on');
+  el.classList.add('on');
+}
+function switchView(v){
+  document.getElementById('vt-2d').classList.toggle('on',v==='2d');
+  document.getElementById('vt-tbl').classList.toggle('on',v==='tbl');
+  document.getElementById('vt-3d').classList.toggle('on',v==='3d');
+  document.getElementById('wrap2d').style.display=v==='2d'?'block':'none';
+  document.getElementById('wrap-tbl').style.display=v==='tbl'?'block':'none';
+  document.getElementById('wrap3d').style.display=v==='3d'?'block':'none';
+  setVis3dPanelVisible(v==='3d');
+  if(v==='tbl') renderTable();
+  else if(v==='3d'){ if(_3d) _3d._dirty=false; buildVis3dRows(); render3D(); }
+  else render2D();
+}
+
+/* ══════════════════════════════════════════
+   STATUS BAR
+══════════════════════════════════════════ */
+function updateStatus(){
+  const t1=document.getElementById('tub1on').checked;
+  const t2=document.getElementById('tub2on').checked;
+  document.getElementById('sbStrings').textContent=casingStrings.length;
+  const wd=fromDisplay(parseInt(document.getElementById('wellDepth').value)||4300);
+  document.getElementById('sbDepth').textContent=toDisplay(wd)+' '+unitLabel();
+  document.getElementById('sbTubing').textContent=[t1&&'SS',t2&&'LS'].filter(Boolean).join('+')||'None';
+  document.getElementById('sbElems').textContent=completionElems.length;
+}
+
+/* ══════════════════════════════════════════
+   HELPERS
+══════════════════════════════════════════ */
+function hexToRgba(hex,a){
+  const r=parseInt(hex.slice(1,3),16),g=parseInt(hex.slice(3,5),16),b=parseInt(hex.slice(5,7),16);
+  return `rgba(${r},${g},${b},${a})`;
+}
+function niceStep(maxD,approxTicks){
+  const rough=maxD/approxTicks;
+  const pow=Math.pow(10,Math.floor(Math.log10(rough)));
+  for(const m of [1,2,5,10]){if(pow*m>=rough)return pow*m;}
+  return pow*10;
+}
+
+/* ══════════════════════════════════════════
+   DRAWING HELPERS — engineering shapes
+══════════════════════════════════════════ */
+
+function drawCasingSection(ctx, cx, y1, y2, halfOD, halfID, color, innerHalfOD){
+  // Wall fill (steel hatching effect)
+  const wallW = halfOD - halfID;
+  ctx.fillStyle = hexToRgba(color, 0.18);
+  ctx.fillRect(cx-halfOD, y1, wallW, y2-y1);
+  ctx.fillRect(cx+halfID, y1, wallW, y2-y1);
+  // Wall stroke
+  ctx.strokeStyle = color; ctx.lineWidth = 1.8; ctx.setLineDash([]);
+  // Outer wall lines
+  ctx.beginPath(); ctx.moveTo(cx-halfOD, y1); ctx.lineTo(cx-halfOD, y2); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(cx+halfOD, y1); ctx.lineTo(cx+halfOD, y2); ctx.stroke();
+  // Inner wall lines — only draw when no concentric casing sits inside this string
+  // (innerHalfOD === halfID means nothing inside; otherwise suppress)
+  if(!innerHalfOD || Math.abs(innerHalfOD - halfID) < 1){
+    ctx.strokeStyle = hexToRgba(color, 0.5); ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(cx-halfID, y1); ctx.lineTo(cx-halfID, y2); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(cx+halfID, y1); ctx.lineTo(cx+halfID, y2); ctx.stroke();
+  }
+  // Top cap
+  ctx.strokeStyle = color; ctx.lineWidth = 1.8;
+  ctx.beginPath(); ctx.moveTo(cx-halfOD, y1); ctx.lineTo(cx+halfOD, y1); ctx.stroke();
+}
+
+function drawCasingShoe(ctx, cx, y, halfOD, color, odInches){
+  ctx.fillStyle = hexToRgba(color, 0.85);
+  ctx.strokeStyle = color;
+  ctx.lineWidth = 1.5;
+  ctx.setLineDash([]);
+  const sh = 14;
+  const ext = sh / 1.5;
+
+  // Left wing – flipped outward
+  ctx.beginPath();
+  ctx.moveTo(cx - halfOD, y - sh);
+  ctx.lineTo(cx - halfOD, y);
+  ctx.lineTo(cx - halfOD - ext, y);
+  ctx.closePath();
+  ctx.fill();
+  ctx.stroke();
+
+  // Right wing – flipped outward
+  ctx.beginPath();
+  ctx.moveTo(cx + halfOD, y - sh);
+  ctx.lineTo(cx + halfOD, y);
+  ctx.lineTo(cx + halfOD + ext, y);
+  ctx.closePath();
+  ctx.fill();
+  ctx.stroke();
+
+  // Extended bottom cap line — suppressed for casings beyond production casing (OD > 9.625")
+  if(!odInches || odInches <= 9.625){
+    ctx.beginPath();
+    ctx.moveTo(cx - halfOD - ext, y);
+    ctx.lineTo(cx + halfOD + ext, y);
+    ctx.stroke();
+  }
+}
+
+function drawTubingSection(ctx, cx, y1, y2, halfOD, halfID, color){
+  const wallW = halfOD - halfID;
+  // Fill
+  ctx.fillStyle = hexToRgba(color, 0.15);
+  ctx.fillRect(cx-halfOD, y1, wallW, y2-y1);
+  ctx.fillRect(cx+halfID, y1, wallW, y2-y1);
+  // Wall strokes
+  ctx.strokeStyle = color; ctx.lineWidth = 1.5; ctx.setLineDash([]);
+  ctx.beginPath(); ctx.moveTo(cx-halfOD, y1); ctx.lineTo(cx-halfOD, y2); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(cx+halfOD, y1); ctx.lineTo(cx+halfOD, y2); ctx.stroke();
+  // Bore
+  ctx.strokeStyle = hexToRgba(color, 0.35); ctx.lineWidth = 0.8;
+  ctx.beginPath(); ctx.moveTo(cx-halfID, y1); ctx.lineTo(cx-halfID, y2); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(cx+halfID, y1); ctx.lineTo(cx+halfID, y2); ctx.stroke();
+}
+
+function drawTubingShoe(ctx, cx, y, halfOD, color){
+  ctx.fillStyle = hexToRgba(color, 0.85);
+  ctx.strokeStyle = color; ctx.lineWidth = 1.5; ctx.setLineDash([]);
+  ctx.beginPath();
+  ctx.moveTo(cx-halfOD, y);
+  ctx.lineTo(cx, y+12);
+  ctx.lineTo(cx+halfOD, y);
+  ctx.closePath(); ctx.fill(); ctx.stroke();
+}
+
+/* Draw engineering element symbols — all shapes span exactly y-h/2 to y+h/2 */
+function drawElement(ctx, shape, cx, y, halfOD, color, label, depth, side, SCALE, elemLen){
+  ctx.save();
+  // h = exact pixel height derived from real element length. Floor at 8px for visibility.
+  const h = (typeof elemLen === 'number' && elemLen > 0) ? Math.max(8, elemLen) : Math.max(14, halfOD * 1.6);
+  const yT = y - h/2;
+  const yB = y + h/2;
+
+  switch(shape){
+    case 'packer_dual':
+    case 'packer_single':
+    case 'packer_perm': {
+      // Packer fills the casing ID (halfOD already = casing inner radius in px).
+      // Collar bands top + bottom (15% each), chevron rubber elements in middle.
+      const colH = h * 0.14;
+
+      // Top collar band
+      ctx.fillStyle = '#111111';
+      ctx.fillRect(cx - halfOD, yT, halfOD * 2, colH);
+      // Bottom collar band
+      ctx.fillRect(cx - halfOD, yB - colH, halfOD * 2, colH);
+
+      // Rubber chevron elements
+      const rColor = shape === 'packer_perm' ? '#333333' : '#cc3333';
+      const mid = y;
+      const rubTop = yT + colH;
+      const rubBot = yB - colH;
+
+      ctx.fillStyle = rColor;
+      // Upper chevron (points downward toward centre)
+      ctx.beginPath();
+      ctx.moveTo(cx - halfOD, rubTop);
+      ctx.lineTo(cx + halfOD, rubTop);
+      ctx.lineTo(cx, mid - h * 0.04);
+      ctx.closePath(); ctx.fill();
+      // Lower chevron (points upward toward centre)
+      ctx.beginPath();
+      ctx.moveTo(cx - halfOD, rubBot);
+      ctx.lineTo(cx + halfOD, rubBot);
+      ctx.lineTo(cx, mid + h * 0.04);
+      ctx.closePath(); ctx.fill();
+
+      // Thin tubing bore lines through centre
+      ctx.strokeStyle = 'rgba(0,0,0,0.35)'; ctx.lineWidth = 0.8; ctx.setLineDash([]);
+      const boreHalf = halfOD * 0.42;
+      ctx.beginPath(); ctx.moveTo(cx - boreHalf, yT); ctx.lineTo(cx - boreHalf, yB); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(cx + boreHalf, yT); ctx.lineTo(cx + boreHalf, yB); ctx.stroke();
+
+      // Outer border
+      ctx.strokeStyle = '#111'; ctx.lineWidth = 1.8; ctx.setLineDash([]);
+      ctx.strokeRect(cx - halfOD, yT, halfOD * 2, h);
+      break;
+    }
+    case 'glm': {
+      // Gas Lift Mandrel: rectangular body + side pocket bulge
+      ctx.fillStyle = hexToRgba(color, 0.85);
+      ctx.beginPath(); ctx.roundRect(cx - halfOD, yT, halfOD * 2, h, 3); ctx.fill();
+      ctx.strokeStyle = color; ctx.lineWidth = 1.5; ctx.stroke();
+
+      // Side pocket oval on the outer side
+      const pocketR = halfOD * 0.65;
+      const pxcx = (side === 'right') ? cx + halfOD + pocketR * 0.55 : cx - halfOD - pocketR * 0.55;
+      ctx.beginPath(); ctx.ellipse(pxcx, y, pocketR * 0.55, Math.min(pocketR, h * 0.4), 0, 0, Math.PI * 2);
+      ctx.fillStyle = hexToRgba(color, 0.85); ctx.fill();
+      ctx.strokeStyle = color; ctx.lineWidth = 1.2; ctx.stroke();
+
+      // Centre bore line
+      ctx.strokeStyle = 'rgba(0,0,0,0.35)'; ctx.lineWidth = 0.8;
+      ctx.beginPath(); ctx.moveTo(cx, yT); ctx.lineTo(cx, yB); ctx.stroke();
+      break;
+    }
+    case 'xsd': {
+      // XSD Sliding Sleeve: box with horizontal port bands + X marker
+      ctx.fillStyle = hexToRgba(color, 0.75);
+      ctx.fillRect(cx - halfOD, yT, halfOD * 2, h);
+      ctx.strokeStyle = color; ctx.lineWidth = 1.5; ctx.setLineDash([]);
+      ctx.strokeRect(cx - halfOD, yT, halfOD * 2, h);
+      // Port bands at 1/3 and 2/3
+      for(let i = 1; i < 3; i++){
+        ctx.strokeStyle = hexToRgba(color, 0.5); ctx.lineWidth = 1;
+        ctx.beginPath(); ctx.moveTo(cx - halfOD, yT + h * i / 3); ctx.lineTo(cx + halfOD, yT + h * i / 3); ctx.stroke();
+      }
+      // X port indicator in upper third
+      ctx.strokeStyle = 'rgba(255,255,255,0.7)'; ctx.lineWidth = 1;
+      const xZoneT = yT + h * 0.05, xZoneB = yT + h * 0.30;
+      ctx.beginPath(); ctx.moveTo(cx - halfOD * 0.5, xZoneT); ctx.lineTo(cx + halfOD * 0.5, xZoneB); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(cx + halfOD * 0.5, xZoneT); ctx.lineTo(cx - halfOD * 0.5, xZoneB); ctx.stroke();
+      break;
+    }
+    case 'nipple': {
+      // X-Nipple: slight narrowing with collar rings at top & bottom
+      const nHOD = halfOD * 0.88;
+      ctx.fillStyle = hexToRgba('#555555', 0.65);
+      ctx.fillRect(cx - nHOD, yT, nHOD * 2, h);
+      ctx.strokeStyle = '#555555'; ctx.lineWidth = 1.8; ctx.setLineDash([]);
+      ctx.strokeRect(cx - nHOD, yT, nHOD * 2, h);
+      // Collar rings (full OD width)
+      ctx.strokeStyle = '#222'; ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.moveTo(cx - halfOD, yT + h * 0.2); ctx.lineTo(cx + halfOD, yT + h * 0.2); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(cx - halfOD, yT + h * 0.8); ctx.lineTo(cx + halfOD, yT + h * 0.8); ctx.stroke();
+      break;
+    }
+    case 'dhsv': {
+      // DHSV: circle with X (closed valve)
+      const r = Math.min(halfOD * 1.05, h / 2);
+      ctx.fillStyle = hexToRgba(color, 0.15);
+      ctx.beginPath(); ctx.arc(cx, y, r, 0, Math.PI * 2); ctx.fill();
+      ctx.strokeStyle = color; ctx.lineWidth = 2.5; ctx.setLineDash([]); ctx.stroke();
+      ctx.strokeStyle = color; ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.moveTo(cx - r * 0.6, y - r * 0.6); ctx.lineTo(cx + r * 0.6, y + r * 0.6); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(cx + r * 0.6, y - r * 0.6); ctx.lineTo(cx - r * 0.6, y + r * 0.6); ctx.stroke();
+      break;
+    }
+    case 'flow_coupling': {
+      // Flow coupling: barrel with flared collar ribs
+      const fW = halfOD * 1.28;
+      ctx.fillStyle = hexToRgba('#e65100', 0.68);
+      ctx.beginPath();
+      ctx.moveTo(cx - halfOD, yT);
+      ctx.lineTo(cx - fW,     yT + h * 0.18);
+      ctx.lineTo(cx - fW,     yB - h * 0.18);
+      ctx.lineTo(cx - halfOD, yB);
+      ctx.lineTo(cx + halfOD, yB);
+      ctx.lineTo(cx + fW,     yB - h * 0.18);
+      ctx.lineTo(cx + fW,     yT + h * 0.18);
+      ctx.lineTo(cx + halfOD, yT);
+      ctx.closePath(); ctx.fill();
+      ctx.strokeStyle = '#e65100'; ctx.lineWidth = 1.5; ctx.setLineDash([]); ctx.stroke();
+      // Centre bore line
+      ctx.strokeStyle = 'rgba(0,0,0,0.25)'; ctx.lineWidth = 0.8;
+      ctx.beginPath(); ctx.moveTo(cx, yT); ctx.lineTo(cx, yB); ctx.stroke();
+      break;
+    }
+    case 'blast_joint': {
+      // Blast joint: wider ribbed section
+      const bjW = halfOD * 1.28;
+      ctx.fillStyle = hexToRgba(color, 0.58);
+      ctx.fillRect(cx - bjW, yT, bjW * 2, h);
+      ctx.strokeStyle = color; ctx.lineWidth = 1.5; ctx.setLineDash([]);
+      ctx.strokeRect(cx - bjW, yT, bjW * 2, h);
+      // Ribs (4 equal segments)
+      for(let i = 0; i <= 4; i++){
+        ctx.strokeStyle = hexToRgba(color, 0.55); ctx.lineWidth = 1;
+        ctx.beginPath(); ctx.moveTo(cx - bjW, yT + h * i / 4); ctx.lineTo(cx + bjW, yT + h * i / 4); ctx.stroke();
+      }
+      break;
+    }
+    case 'travel_joint': {
+      // Travel joint: inner mandrel + outer sleeve on top half
+      const iW = halfOD * 0.58;
+      // Inner mandrel (full height)
+      ctx.fillStyle = hexToRgba(color, 0.48);
+      ctx.fillRect(cx - iW, yT, iW * 2, h);
+      ctx.strokeStyle = color; ctx.lineWidth = 1.2; ctx.setLineDash([]);
+      ctx.strokeRect(cx - iW, yT, iW * 2, h);
+      // Outer sleeve (top half only)
+      const sleeveH = h * 0.5;
+      ctx.fillStyle = hexToRgba(color, 0.32);
+      ctx.fillRect(cx - halfOD, yT, halfOD - iW, sleeveH);
+      ctx.fillRect(cx + iW, yT, halfOD - iW, sleeveH);
+      ctx.strokeStyle = color; ctx.lineWidth = 1.5;
+      ctx.strokeRect(cx - halfOD, yT, halfOD - iW, sleeveH);
+      ctx.strokeRect(cx + iW, yT, halfOD - iW, sleeveH);
+      break;
+    }
+    case 'pop_assy': {
+      // POP ASSY: hourglass / H-shaped symbol
+      ctx.fillStyle = hexToRgba(color, 0.68);
+      ctx.beginPath();
+      ctx.moveTo(cx,           yT);
+      ctx.lineTo(cx + halfOD,  yT + h * 0.28);
+      ctx.lineTo(cx + halfOD * 0.55, yT + h * 0.28);
+      ctx.lineTo(cx + halfOD * 0.55, yB - h * 0.28);
+      ctx.lineTo(cx + halfOD,  yB - h * 0.28);
+      ctx.lineTo(cx,           yB);
+      ctx.lineTo(cx - halfOD,  yB - h * 0.28);
+      ctx.lineTo(cx - halfOD * 0.55, yB - h * 0.28);
+      ctx.lineTo(cx - halfOD * 0.55, yT + h * 0.28);
+      ctx.lineTo(cx - halfOD,  yT + h * 0.28);
+      ctx.closePath(); ctx.fill();
+      ctx.strokeStyle = color; ctx.lineWidth = 1.5; ctx.setLineDash([]); ctx.stroke();
+      break;
+    }
+    case 'plug': {
+      // Plug / EOT: solid filled rectangle
+      ctx.fillStyle = '#111';
+      ctx.fillRect(cx - halfOD, yT, halfOD * 2, h);
+      ctx.strokeStyle = '#111'; ctx.lineWidth = 2; ctx.setLineDash([]);
+      ctx.strokeRect(cx - halfOD, yT, halfOD * 2, h);
+      // Hatch lines to emphasise solid nature
+      ctx.strokeStyle = 'rgba(255,255,255,0.15)'; ctx.lineWidth = 1;
+      for(let i = 1; i < 4; i++){
+        ctx.beginPath(); ctx.moveTo(cx - halfOD, yT + h * i / 4); ctx.lineTo(cx + halfOD, yT + h * i / 4); ctx.stroke();
+      }
+      break;
+    }
+    default: {
+      ctx.fillStyle = hexToRgba(color, 0.68);
+      ctx.fillRect(cx - halfOD, yT, halfOD * 2, h);
+      ctx.strokeStyle = color; ctx.lineWidth = 1.5; ctx.setLineDash([]);
+      ctx.strokeRect(cx - halfOD, yT, halfOD * 2, h);
+    }
+  }
+  ctx.restore();
+}
+
+function drawPerforations(ctx, cx, y1, y2, halfOD, side){
+  // Perforation marks: small horizontal lines on casing exterior
+  ctx.strokeStyle = '#cc6600'; ctx.lineWidth = 1.5; ctx.setLineDash([]);
+  const step = 8;
+  for(let y=y1; y<=y2; y+=step){
+    const len = 8 + Math.random()*4;
+    if(side==='left' || side==='both'){
+      ctx.beginPath(); ctx.moveTo(cx-halfOD, y); ctx.lineTo(cx-halfOD-len, y); ctx.stroke();
+    }
+    if(side==='right' || side==='both'){
+      ctx.beginPath(); ctx.moveTo(cx+halfOD, y); ctx.lineTo(cx+halfOD+len, y); ctx.stroke();
+    }
+  }
+}
+
+/* ══════════════════════════════════════════
+   MAIN 2D RENDER — Engineering Schematic
+══════════════════════════════════════════ */
+
+// ── ZOOM / PAN STATE ──────────────────────────────────────────────────────────
+let _zScale = 1, _zOffX = 0, _zOffY = 0;
+let _isPanning = false, _panStartX = 0, _panStartY = 0;
+
+function resetZoom(){ _zScale=1; _zOffX=0; _zOffY=0; render2D(); }
+
+function initZoomPan(){
+  const c = document.getElementById('canvas2d');
+
+  // Mouse wheel → zoom centred on cursor
+  c.addEventListener('wheel', e => {
+    e.preventDefault();
+    const rect = c.getBoundingClientRect();
+    const mx = e.clientX - rect.left;
+    const my = e.clientY - rect.top;
+    const factor = e.deltaY < 0 ? 1.12 : 1/1.12;
+    _zOffX = mx - factor*(mx - _zOffX);
+    _zOffY = my - factor*(my - _zOffY);
+    _zScale = Math.min(Math.max(_zScale * factor, 0.15), 12);
+    render2D();
+  }, { passive: false });
+
+  // Middle-click or right-click drag → pan
+  c.addEventListener('mousedown', e => {
+    if(e.button === 1 || e.button === 2){
+      e.preventDefault();
+      _isPanning = true;
+      _panStartX = e.clientX - _zOffX;
+      _panStartY = e.clientY - _zOffY;
+    }
+  });
+  window.addEventListener('mousemove', e => {
+    if(!_isPanning) return;
+    _zOffX = e.clientX - _panStartX;
+    _zOffY = e.clientY - _panStartY;
+    render2D();
+  });
+  window.addEventListener('mouseup', e => {
+    if(e.button === 1 || e.button === 2) _isPanning = false;
+  });
+
+  // Touch: pinch-zoom + single-finger pan
+  let _td = null, _tx = null, _ty = null;
+  c.addEventListener('touchstart', e => {
+    if(e.touches.length === 2){
+      _td = Math.hypot(e.touches[0].clientX - e.touches[1].clientX,
+                       e.touches[0].clientY - e.touches[1].clientY);
+    } else {
+      _tx = e.touches[0].clientX - _zOffX;
+      _ty = e.touches[0].clientY - _zOffY;
+    }
+  }, {passive:true});
+  c.addEventListener('touchmove', e => {
+    e.preventDefault();
+    if(e.touches.length === 2){
+      const d = Math.hypot(e.touches[0].clientX - e.touches[1].clientX,
+                            e.touches[0].clientY - e.touches[1].clientY);
+      if(_td){ _zScale = Math.min(Math.max(_zScale * d/_td, 0.15), 12); }
+      _td = d;
+    } else {
+      _zOffX = e.touches[0].clientX - _tx;
+      _zOffY = e.touches[0].clientY - _ty;
+    }
+    render2D();
+  }, {passive:false});
+  c.addEventListener('touchend', () => { _td = null; }, {passive:true});
+  c.addEventListener('contextmenu', e => e.preventDefault());
+}
+
+function render2D(){
+  const c = document.getElementById('canvas2d');
+  const wrap = document.getElementById('wrap2d');
+  const W = wrap.clientWidth, H = wrap.clientHeight;
+  c.width = W * devicePixelRatio; c.height = H * devicePixelRatio;
+  c.style.width = W+'px'; c.style.height = H+'px';
+  const ctx = c.getContext('2d');
+  ctx.scale(devicePixelRatio, devicePixelRatio);
+
+  // White background always fills full viewport (outside zoom transform)
+  ctx.fillStyle = '#f0f4f8'; ctx.fillRect(0, 0, W, H);
+
+  // Apply zoom/pan — everything below is in canvas-space scaled by _zScale
+  ctx.save();
+  ctx.translate(_zOffX, _zOffY);
+  ctx.scale(_zScale, _zScale);
+
+  // The logical canvas size at scale=1. We always design for W×H, zoom scales around it.
+  ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, W, H);
+
+  const maxDepth = fromDisplay(parseInt(document.getElementById('wellDepth').value)||4300);
+  const datum = datumLabel();
+
+  /* ── LAYOUT ──
+     Left table | Center well | Right table
+     Inspired by reference image
+  */
+  const COL_TABLE_W = 240; // each table side
+  const WELL_W = Math.min(W - COL_TABLE_W*2, 280);
+  const wellCX = W/2;
+  const PAD_TOP = 100; // for header rows
+  const PAD_BOT = 50;
+  const dH = H - PAD_TOP - PAD_BOT;
+  const dScale = dH / maxDepth;
+  const SCALE = dScale;
+
+  // Casing geometry
+  const sortedCasings = [...casingStrings].sort((a,b)=>b.od-a.od);
+  const maxOD = sortedCasings.length ? sortedCasings[0].od : 13.375;
+  // Scale so max OD = ~half the WELL_W
+  const odPxPerIn = (WELL_W * 0.4) / maxOD;
+
+  // Tubing config
+  const tub1on = document.getElementById('tub1on').checked;
+  const tub2on = document.getElementById('tub2on').checked;
+  const od1 = parseFloat(document.getElementById('tub1OD').value)||3.5;
+  const od2 = parseFloat(document.getElementById('tub2OD').value)||3.5;
+  const id1 = getTubingID(document.getElementById('tub1OD').value);
+  const id2 = getTubingID(document.getElementById('tub2OD').value);
+  const tub1Top = fromDisplay(parseFloat(document.getElementById('tub1Top').value)||0);
+  const tub1Bot = fromDisplay(parseFloat(document.getElementById('tub1Bot').value)||3000);
+  const tub2Top = fromDisplay(parseFloat(document.getElementById('tub2Top').value)||0);
+  const tub2Bot = fromDisplay(parseFloat(document.getElementById('tub2Bot').value)||3761);
+  const tub1Label = document.getElementById('tub1Label').value||'SHORT STRING';
+  const tub2Label = document.getElementById('tub2Label').value||'LONG STRING';
+  const tub1Wt = document.getElementById('tub1Wt').value||'9.2';
+  const tub2Wt = document.getElementById('tub2Wt').value||'9.2';
+  const tub1Grade = document.getElementById('tub1Grade').value||'L-80';
+  const tub2Grade = document.getElementById('tub2Grade').value||'L-80';
+  const tub1Conn = document.getElementById('tub1Conn').value||'FOX-K';
+  const tub2Conn = document.getElementById('tub2Conn').value||'FOX-K';
+
+  // Tubing pixel scale: smaller than casing
+  const tubPxPerIn = odPxPerIn * 0.55;
+  const hOD1 = od1 * tubPxPerIn / 2;
+  const hID1 = id1 * tubPxPerIn / 2;
+  const hOD2 = od2 * tubPxPerIn / 2;
+  const hID2 = id2 * tubPxPerIn / 2;
+
+  // Tubing X positions: side by side when both on
+  let t1cx, t2cx;
+  if(tub1on && tub2on){
+    t1cx = wellCX - hOD2 - 2;
+    t2cx = wellCX + hOD1 + 2;
+  } else {
+    t1cx = wellCX;
+    t2cx = wellCX;
+  }
+
+  /* ── DRAW HEADER ROWS ── */
+  const hdrH1 = 28, hdrH2 = 22, hdrH3 = 22;
+  const hdrTot = hdrH1 + hdrH2 + hdrH3;
+  const topY = hdrTot + 8; // actual drawing start Y
+  const PAD_T = topY;
+  const dHh = H - PAD_T - PAD_BOT;
+  const dS = dHh / maxDepth;
+
+  // Draw outer border of header
+  ctx.fillStyle = '#e8f4f8';
+  ctx.fillRect(0, 0, W, hdrTot);
+  ctx.strokeStyle = '#5a8aaa'; ctx.lineWidth = 1; ctx.setLineDash([]);
+  ctx.strokeRect(0, 0, W, hdrTot);
+
+  // String labels in header
+  const leftTblEnd = W/2 - WELL_W/2;
+  const rightTblStart = W/2 + WELL_W/2;
+
+  // Left header (Short String)
+  if(tub1on){
+    ctx.fillStyle = '#0a2a42';
+    ctx.font = `700 10px 'IBM Plex Mono'`; ctx.textAlign = 'center';
+    ctx.fillText(tub1Label, leftTblEnd/2, 14);
+    ctx.font = `500 9px 'IBM Plex Mono'`;
+    ctx.fillStyle = '#445566';
+    ctx.fillText(`${od1}", ${tub1Wt}PPF, ${tub1Grade}, ${tub1Conn}`, leftTblEnd/2, 26);
+  }
+
+  // Right header (Long String)
+  if(tub2on){
+    ctx.fillStyle = '#0a2a42';
+    ctx.font = `700 10px 'IBM Plex Mono'`; ctx.textAlign = 'center';
+    ctx.fillText(tub2Label, rightTblStart + (W-rightTblStart)/2, 14);
+    ctx.font = `500 9px 'IBM Plex Mono'`;
+    ctx.fillStyle = '#445566';
+    ctx.fillText(`${od2}", ${tub2Wt}PPF, ${tub2Grade}, ${tub2Conn}`, rightTblStart + (W-rightTblStart)/2, 26);
+  }
+
+  // ── DYNAMIC EQUIPMENT COLUMN WIDTH ──
+  // Measure all equipment label widths to set column sizes dynamically
+  ctx.font = `400 8px 'IBM Plex Mono'`;
+  const leftElems  = completionElems.filter(e => e.tubingStr==='1' || e.tubingStr==='both');
+  const rightElems = completionElems.filter(e => e.tubingStr==='2' || e.tubingStr==='both');
+  // Also measure casing shoe labels on the right
+  const rightCasingLabels = casingStrings.map(s => `${s.od}" CASING SHOE`);
+
+  const measureLeftEquip  = leftElems.map(e  => ctx.measureText(e.label).width + 10);
+  const measureRightEquip = [...rightElems.map(e => ctx.measureText(e.label).width + 10),
+                             ...rightCasingLabels.map(l => ctx.measureText(l).width + 10)];
+
+  const FIXED_L  = 36+36+28+44;            // sum of non-equipment left cols
+  const FIXED_R  = 44+28+36+36;            // sum of non-equipment right cols
+  const minEquip = 60;
+  const maxAvailL = Math.max(minEquip, leftTblEnd - FIXED_L);
+  const maxAvailR = Math.max(minEquip, W - rightTblStart - FIXED_R);
+  const bestFitL  = measureLeftEquip.length  ? Math.min(maxAvailL, Math.max(minEquip, Math.max(...measureLeftEquip)))  : maxAvailL;
+  const bestFitR  = measureRightEquip.length ? Math.min(maxAvailR, Math.max(minEquip, Math.max(...measureRightEquip))) : maxAvailR;
+
+  // Column headers for table areas
+  const leftCols = ['MAX OD\n(INCH)', 'MIN OD\n(INCH)', 'EQUIPMENT', 'INC\n(DEG)', `DEPTH\n(${datum})`];
+  const leftColW = [36, 36, bestFitL, 28, 44];
+  let lx = 0;
+  leftCols.forEach((col,i)=>{
+    ctx.fillStyle = '#b8d0e0'; ctx.fillRect(lx, hdrH1, leftColW[i], hdrH2+hdrH3);
+    ctx.strokeStyle='#5a8aaa'; ctx.lineWidth=0.5;
+    ctx.strokeRect(lx, hdrH1, leftColW[i], hdrH2+hdrH3);
+    ctx.font=`600 7.5px 'IBM Plex Mono'`; ctx.fillStyle='#0a2a42'; ctx.textAlign='center';
+    col.split('\n').forEach((line,j)=>ctx.fillText(line, lx+leftColW[i]/2, hdrH1+10+j*10));
+    lx+=leftColW[i];
+  });
+
+  const rightCols = [`DEPTH\n(${datum})`, 'INC\n(DEG)', 'EQUIPMENT', 'MIN OD\n(INCH)', 'MAX OD\n(INCH)'];
+  const rightColW = [44, 28, bestFitR, 36, 36];
+  let rx = rightTblStart;
+  rightCols.forEach((col,i)=>{
+    ctx.fillStyle='#b8d0e0'; ctx.fillRect(rx, hdrH1, rightColW[i], hdrH2+hdrH3);
+    ctx.strokeStyle='#5a8aaa'; ctx.lineWidth=0.5;
+    ctx.strokeRect(rx, hdrH1, rightColW[i], hdrH2+hdrH3);
+    ctx.font=`600 7.5px 'IBM Plex Mono'`; ctx.fillStyle='#0a2a42'; ctx.textAlign='center';
+    col.split('\n').forEach((line,j)=>ctx.fillText(line, rx+rightColW[i]/2, hdrH1+10+j*10));
+    rx+=rightColW[i];
+  });
+
+  // Center area header
+  ctx.fillStyle = '#d0e8f0';
+  ctx.fillRect(leftTblEnd, hdrH1, WELL_W, hdrH2+hdrH3);
+  ctx.strokeStyle='#00829c'; ctx.lineWidth=1;
+  ctx.strokeRect(leftTblEnd, hdrH1, WELL_W, hdrH2+hdrH3);
+  ctx.font=`700 9px 'IBM Plex Mono'`; ctx.fillStyle='#004466'; ctx.textAlign='center';
+  ctx.fillText(document.getElementById('wellName').value||'WELL-A', wellCX, hdrH1+14);
+  ctx.font=`500 8px 'IBM Plex Mono'`; ctx.fillStyle='#006688';
+  ctx.fillText(document.getElementById('wellField').value||'Field X', wellCX, hdrH1+26);
+
+  /* ── TABLE BORDER LINES (vertical) ── */
+  ctx.strokeStyle='#5a8aaa'; ctx.lineWidth=0.5; ctx.setLineDash([]);
+  // Left table right border
+  ctx.beginPath(); ctx.moveTo(leftTblEnd, hdrTot); ctx.lineTo(leftTblEnd, H-PAD_BOT); ctx.stroke();
+  // Right table left border
+  ctx.beginPath(); ctx.moveTo(rightTblStart, hdrTot); ctx.lineTo(rightTblStart, H-PAD_BOT); ctx.stroke();
+
+  /* ── DEPTH GRID LINES ── */
+  const depthStep = niceStep(maxDepth, Math.floor(dHh/50));
+  ctx.font = `500 9px 'IBM Plex Mono'`;
+  for(let d=0; d<=maxDepth; d+=depthStep){
+    const y = PAD_T + d*dS;
+    if(y > H-PAD_BOT) break;
+    ctx.strokeStyle = 'rgba(0,130,156,0.12)'; ctx.lineWidth = 1; ctx.setLineDash([2,4]);
+    ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke();
+    ctx.setLineDash([]);
+
+    // Depth label: left-aligned at the left edge of the well sketch column
+    ctx.textAlign = 'left'; ctx.fillStyle = '#00829c';
+    ctx.font = `600 9px 'IBM Plex Mono'`;
+    ctx.fillText(toDisplay(d).toString(), leftTblEnd + 4, y - 2);
+
+    // Small tick mark on the left edge of the well bore
+    const maxHalfOD = sortedCasings.length ? sortedCasings[0].od * odPxPerIn / 2 : WELL_W * 0.4;
+    ctx.strokeStyle = 'rgba(0,130,156,0.35)'; ctx.lineWidth = 1; ctx.setLineDash([]);
+    ctx.beginPath(); ctx.moveTo(wellCX - maxHalfOD - 2, y); ctx.lineTo(wellCX - maxHalfOD - 7, y); ctx.stroke();
+  }
+
+  /* ── DRAW CEMENT (before casing walls so cement sits behind them) ── */
+  const cementPat  = getCementPattern();
+  const cementOp   = getCementOpacity2d();
+  const showCemLbl = document.getElementById('showCementAnnotations')?.checked !== false;
+
+  sortedCasings.forEach((s, si)=>{
+    const halfOD = s.od * odPxPerIn / 2;
+    const halfID = s.id * odPxPerIn / 2;
+    const cementTop  = (s.cementTop !== undefined && s.cementTop !== null) ? s.cementTop : s.top;
+    const cementTopY = PAD_T + cementTop * dS;
+    const shoeY      = Math.min(PAD_T + s.bottom * dS, H - PAD_BOT - 14);
+
+    // Cement is EXTERNAL to this casing: fills from this casing OD outward to the prev (larger) casing ID
+    // For outermost casing, use a fixed borehole annulus offset beyond the OD
+    const prevCas = sortedCasings[si-1];
+    const outerHalfOD = prevCas ? (prevCas.id * odPxPerIn / 2) : (halfOD + 8);
+    const innerHalfOD = halfOD; // cement starts at the outer wall of this casing
+
+    if(cementTopY < shoeY){
+      drawCement2D(ctx, wellCX, cementTopY, shoeY, outerHalfOD, innerHalfOD, _cementColor, cementOp, cementPat);
+
+      // TOC annotation line + label on left side
+      if(showCemLbl){
+        const tocX1 = wellCX - halfOD - 2;
+        const tocX0 = tocX1 - 24;
+        ctx.save();
+        ctx.strokeStyle = hexToRgba(_cementColor, 0.85);
+        ctx.lineWidth = 1.2;
+        ctx.setLineDash([3, 2]);
+        ctx.beginPath();
+        ctx.moveTo(tocX0, cementTopY);
+        ctx.lineTo(tocX1, cementTopY);
+        ctx.stroke();
+        ctx.setLineDash([]);
+        // Small triangle tick
+        ctx.fillStyle = hexToRgba(_cementColor, 0.9);
+        ctx.beginPath();
+        ctx.moveTo(tocX1, cementTopY - 3);
+        ctx.lineTo(tocX1, cementTopY + 3);
+        ctx.lineTo(tocX1 + 4, cementTopY);
+        ctx.closePath();
+        ctx.fill();
+        // Label
+        ctx.font = `600 8px 'IBM Plex Mono'`;
+        ctx.fillStyle = hexToRgba(_cementColor, 0.95);
+        ctx.textAlign = 'right';
+        ctx.fillText(`TOC ${toDisplay(cementTop)}${unitLabel()}`, tocX0 - 2, cementTopY + 3);
+        ctx.restore();
+      }
+    }
+  });
+
+  /* ── DRAW CASINGS ── */
+  sortedCasings.forEach((s, si)=>{
+    const halfOD = s.od * odPxPerIn / 2;
+    const halfID = s.id * odPxPerIn / 2;
+    const y1 = PAD_T + s.top*dS;
+    const y2 = PAD_T + s.bottom*dS;
+    const innerOD = sortedCasings[si+1] ? sortedCasings[si+1].od * odPxPerIn / 2 : halfID;
+    if(y2 > H-PAD_BOT || y1 < PAD_T - 5) {}
+    drawCasingSection(ctx, wellCX, y1, y2, halfOD, halfID, s.color, innerOD);
+    drawCasingShoe(ctx, wellCX, Math.min(y2, H-PAD_BOT-14), halfOD, s.color, s.od);
+
+    // Casing shoe label in table
+    const shoeY = Math.min(y2, H-PAD_BOT-14);
+    const shoeD = toDisplay(s.bottom);
+    const shoeLabel = `${s.od}" CASING SHOE`;
+
+    // Draw in right table (depth + label)
+    ctx.font = `500 8px 'IBM Plex Mono'`; ctx.textAlign='left'; ctx.fillStyle='#1a2a38';
+    ctx.fillText(shoeD.toString(), rightTblStart+2, shoeY+3);
+    ctx.fillText(shoeLabel, rightTblStart+rightColW[0]+rightColW[1]+4, shoeY+3);
+    // Min/Max OD
+    ctx.textAlign='center';
+    ctx.fillText(s.id.toFixed(3), rightTblStart+rightColW[0]+rightColW[1]+rightColW[2]+rightColW[3]/2, shoeY+3);
+    ctx.fillText(s.od.toFixed(3), rightTblStart+rightColW[0]+rightColW[1]+rightColW[2]+rightColW[3]+rightColW[4]/2, shoeY+3);
+
+    // Row separator
+    ctx.strokeStyle='rgba(90,138,170,0.3)'; ctx.lineWidth=0.5;
+    ctx.beginPath(); ctx.moveTo(rightTblStart, shoeY+6); ctx.lineTo(W, shoeY+6); ctx.stroke();
+  });
+
+  /* ── DRAW TUBING 1 (Short String — left) ── */
+  if(tub1on){
+    const y1 = PAD_T + tub1Top*dS;
+    const y2 = PAD_T + tub1Bot*dS;
+    const tc = '#707070'; // steel grey
+    drawTubingSection(ctx, t1cx, y1, Math.min(y2, H-PAD_BOT), hOD1, hID1, tc);
+    drawTubingShoe(ctx, t1cx, Math.min(y2, H-PAD_BOT-12), hOD1, tc);
+  }
+
+  /* ── DRAW TUBING 2 (Long String — right) ── */
+  if(tub2on){
+    const y1 = PAD_T + tub2Top*dS;
+    const y2 = PAD_T + tub2Bot*dS;
+    const tc = '#505050'; // darker steel
+    drawTubingSection(ctx, t2cx, y1, Math.min(y2, H-PAD_BOT), hOD2, hID2, tc);
+    drawTubingShoe(ctx, t2cx, Math.min(y2, H-PAD_BOT-12), hOD2, tc);
+  }
+
+  /* ── DRAW COMPLETION ELEMENTS ── */
+  // Sort by depth
+  const elems = [...completionElems].sort((a,b)=>a.depth-b.depth);
+
+  // Track table rows for left (SS) and right (LS)
+  let leftRows = [];
+  let rightRows = [];
+
+  elems.forEach(e=>{
+    const m = ELEM_META[e.type] || ELEM_META.nipple;
+    const y = PAD_T + e.depth * dS;
+    if(y < PAD_T || y > H-PAD_BOT) return;
+
+    const isLeft = (e.tubingStr==='1' || e.tubingStr==='both');
+    const isRight = (e.tubingStr==='2' || e.tubingStr==='both');
+
+    // Tubing HOD for element sizing
+    const tubHOD = isLeft ? hOD1 : hOD2;
+    const cx = isLeft ? t1cx : t2cx;
+
+    // Packers snap to innermost casing ID at element depth; others use tubing OD
+    const isPacker = e.type.includes('packer');
+    let elemHOD;
+    let packerCX = cx; // packers draw centred on wellCX spanning full casing ID
+    if(isPacker){
+      // Find innermost (smallest OD) casing whose interval covers this depth
+      let bestCasing = null;
+      for(let si = sortedCasings.length - 1; si >= 0; si--){
+        const cs = sortedCasings[si];
+        if(e.depth >= cs.top && e.depth <= cs.bottom){
+          bestCasing = cs;
+          break;
+        }
+      }
+      if(!bestCasing && sortedCasings.length){
+        bestCasing = sortedCasings[sortedCasings.length - 1];
+      }
+      // halfOD of packer = half the casing ID in pixels, centred on wellCX
+      elemHOD  = bestCasing ? (bestCasing.id * odPxPerIn / 2) : (tubHOD * 2.5);
+      packerCX = wellCX; // always centred on borehole axis
+    } else {
+      elemHOD = tubHOD * 1.0;
+    }
+
+    // Pixel height = exact real length scaled to canvas. Floor at 8px so tiny items remain visible.
+    const elemPxH = Math.max(8, (e.length || 3) * dS);
+    const drawCX = isPacker ? packerCX : cx;
+    drawElement(ctx, m.shape, drawCX, y, elemHOD, m.color, e.label, e.depth, isLeft?'left':'right', dS, elemPxH);
+
+    // If both strings, also draw on the other (packers still centred on wellCX)
+    if(e.tubingStr==='both'){
+      drawElement(ctx, m.shape, isPacker ? packerCX : t2cx, y, elemHOD, m.color, e.label, e.depth, 'right', dS, elemPxH);
+    }
+
+    // Table rows — avoid duplicate: 'both' already counted via isRight
+    if(isLeft){
+      leftRows.push({y, e, m});
+    }
+    if(isRight){
+      rightRows.push({y, e, m});
+    }
+  });
+
+  /* ── LABEL DECONFLICTION ──
+     Push table row Y positions apart so text never overlaps.
+     We do this separately for leftRows and rightRows.
+     Row height = 10px (8px font + 2px gap). */
+  const ROW_H = 11;
+
+  function deconflictRows(rows){
+    if(!rows.length) return rows;
+    // sort by original depth Y
+    rows.sort((a,b) => a.y - b.y);
+    // forward pass: push down
+    for(let i = 1; i < rows.length; i++){
+      if(rows[i].labelY - rows[i-1].labelY < ROW_H){
+        rows[i].labelY = rows[i-1].labelY + ROW_H;
+      }
+    }
+    // backward pass: pull up if pushed too far below the original depth line
+    for(let i = rows.length - 2; i >= 0; i--){
+      if(rows[i+1].labelY - rows[i].labelY < ROW_H){
+        rows[i].labelY = rows[i+1].labelY - ROW_H;
+      }
+    }
+    return rows;
+  }
+
+  // Attach initial labelY = y (depth position), then deconflict
+  leftRows.forEach(r  => r.labelY = r.y);
+  rightRows.forEach(r => r.labelY = r.y);
+  deconflictRows(leftRows);
+  deconflictRows(rightRows);
+
+  /* ── RENDER LEFT TABLE ROWS (Short String) ── */
+  const lColX = [0, leftColW[0], leftColW[0]+leftColW[1], leftColW[0]+leftColW[1]+leftColW[2],
+                 leftColW[0]+leftColW[1]+leftColW[2]+leftColW[3]];
+
+  leftRows.forEach(({y, labelY, e, m})=>{
+    if(labelY<PAD_T-ROW_H||labelY>H-PAD_BOT) return;
+
+    ctx.font=`400 8px 'IBM Plex Mono'`; ctx.fillStyle='#1a2a38';
+    // MAX OD
+    ctx.textAlign='center'; ctx.fillText(e.maxOD.toFixed(3), lColX[0]+leftColW[0]/2, labelY+3);
+    // MIN OD
+    ctx.fillText(e.minOD.toFixed(3), lColX[1]+leftColW[1]/2, labelY+3);
+    // EQUIPMENT label
+    ctx.textAlign='left'; ctx.fillText(e.label, lColX[2]+3, labelY+3);
+    // INC
+    ctx.textAlign='center'; ctx.fillText(e.inc.toFixed(1), lColX[3]+leftColW[3]/2, labelY+3);
+    // DEPTH (always shows true depth)
+    ctx.fillText(toDisplay(e.depth).toString(), lColX[4]+leftColW[4]/2, labelY+3);
+    // Row line
+    ctx.strokeStyle='rgba(90,138,170,0.25)'; ctx.lineWidth=0.4;
+    ctx.beginPath(); ctx.moveTo(0,labelY+7); ctx.lineTo(leftTblEnd,labelY+7); ctx.stroke();
+
+    // Leader line: from table right edge at labelY, bend to element depth y, then to casing edge
+    const leaderTargetX = wellCX - maxOD*odPxPerIn/2 - 6;
+    ctx.strokeStyle='rgba(90,138,170,0.5)'; ctx.lineWidth=0.6; ctx.setLineDash([2,3]);
+    if(Math.abs(labelY - y) < 1){
+      // No bend needed
+      ctx.beginPath(); ctx.moveTo(leftTblEnd, y); ctx.lineTo(leaderTargetX, y); ctx.stroke();
+    } else {
+      // L-shaped leader: horizontal from table to midpoint, then diagonal/vertical to depth
+      ctx.beginPath();
+      ctx.moveTo(leftTblEnd, labelY);
+      ctx.lineTo(leftTblEnd + 6, labelY);
+      ctx.lineTo(leftTblEnd + 6, y);
+      ctx.lineTo(leaderTargetX, y);
+      ctx.stroke();
+    }
+    ctx.setLineDash([]);
+    // Small dot at element depth on leader
+    ctx.fillStyle='rgba(90,138,170,0.7)';
+    ctx.beginPath(); ctx.arc(leaderTargetX, y, 1.5, 0, Math.PI*2); ctx.fill();
+  });
+
+  /* ── RENDER RIGHT TABLE ROWS (Long String) ── */
+  const rColX = rightCols.map((_,i)=>{
+    let x=rightTblStart;
+    for(let j=0;j<i;j++) x+=rightColW[j];
+    return x;
+  });
+
+  rightRows.forEach(({y, labelY, e, m})=>{
+    if(labelY<PAD_T-ROW_H||labelY>H-PAD_BOT) return;
+
+    ctx.font=`400 8px 'IBM Plex Mono'`; ctx.fillStyle='#1a2a38';
+    // DEPTH (always shows true depth)
+    ctx.textAlign='center'; ctx.fillText(toDisplay(e.depth).toString(), rColX[0]+rightColW[0]/2, labelY+3);
+    // INC
+    ctx.fillText(e.inc.toFixed(1), rColX[1]+rightColW[1]/2, labelY+3);
+    // EQUIPMENT
+    ctx.textAlign='left'; ctx.fillText(e.label, rColX[2]+3, labelY+3);
+    // MIN OD
+    ctx.textAlign='center'; ctx.fillText(e.minOD.toFixed(3), rColX[3]+rightColW[3]/2, labelY+3);
+    // MAX OD
+    ctx.fillText(e.maxOD.toFixed(3), rColX[4]+rightColW[4]/2, labelY+3);
+    // Row line
+    ctx.strokeStyle='rgba(90,138,170,0.25)'; ctx.lineWidth=0.4;
+    ctx.beginPath(); ctx.moveTo(rightTblStart,labelY+7); ctx.lineTo(W,labelY+7); ctx.stroke();
+
+    // Leader from element depth y to table at labelY
+    const leaderStartX = wellCX + maxOD*odPxPerIn/2 + 6;
+    ctx.strokeStyle='rgba(90,138,170,0.5)'; ctx.lineWidth=0.6; ctx.setLineDash([2,3]);
+    if(Math.abs(labelY - y) < 1){
+      ctx.beginPath(); ctx.moveTo(leaderStartX, y); ctx.lineTo(rightTblStart, y); ctx.stroke();
+    } else {
+      ctx.beginPath();
+      ctx.moveTo(leaderStartX, y);
+      ctx.lineTo(rightTblStart - 6, y);
+      ctx.lineTo(rightTblStart - 6, labelY);
+      ctx.lineTo(rightTblStart, labelY);
+      ctx.stroke();
+    }
+    ctx.setLineDash([]);
+    // Small dot at element depth on leader
+    ctx.fillStyle='rgba(90,138,170,0.7)';
+    ctx.beginPath(); ctx.arc(leaderStartX, y, 1.5, 0, Math.PI*2); ctx.fill();
+  });
+
+  /* ── FORMATION ZONES ── */
+  formationZones.forEach((zone, zi)=>{
+    const yT = PAD_T + zone.top * dS;
+    const yB = PAD_T + zone.bot * dS;
+    if(yT>H-PAD_BOT) return;
+
+    // Perforation marks on casing
+    const innerCas = sortedCasings[sortedCasings.length-1];
+    const casHOD = innerCas ? innerCas.od*odPxPerIn/2 : WELL_W*0.25;
+    drawPerforations(ctx, wellCX, yT, Math.min(yB, H-PAD_BOT), casHOD, 'both');
+
+    // Zone box in bottom left (like reference image)
+    const boxX = 4;
+    const boxY = H - PAD_BOT - (formationZones.length - zi)*85;
+    const boxW = leftTblEnd - 8;
+    const boxH = 78;
+    ctx.fillStyle = '#e0f4f8';
+    ctx.fillRect(boxX, boxY, boxW, boxH);
+    ctx.strokeStyle = '#00829c'; ctx.lineWidth = 1.5;
+    ctx.strokeRect(boxX, boxY, boxW, boxH);
+    ctx.fillStyle = '#00829c';
+    ctx.fillRect(boxX, boxY, boxW, 14);
+    ctx.font=`700 8px 'IBM Plex Mono'`; ctx.textAlign='center'; ctx.fillStyle='#fff';
+    ctx.fillText(`FORMATION DETAIL — ZONE #${zi+1}`, boxX+boxW/2, boxY+10);
+    ctx.font=`400 8px 'IBM Plex Mono'`; ctx.textAlign='left'; ctx.fillStyle='#0a2a42';
+    ctx.fillText(`Name           ${zone.name}`, boxX+6, boxY+24);
+    ctx.fillText(`Pressure (psi) ${zone.pressure}`, boxX+6, boxY+34);
+    ctx.fillText(`Top perf       ${toDisplay(zone.top)} ${unitLabel()}`, boxX+6, boxY+44);
+    ctx.fillText(`Bottom perf    ${toDisplay(zone.bot)} ${unitLabel()}`, boxX+6, boxY+54);
+
+    // Zone labels in well
+    ctx.font=`500 9px 'IBM Plex Mono'`; ctx.textAlign='center'; ctx.fillStyle='#cc6600';
+    ctx.fillText(`◀ ${zone.name} ▶`, wellCX, (yT+yB)/2+3);
+  });
+
+  /* ── WELLBORE BOTTOM — removed (no black bar) ── */
+
+  /* ── OUTER BORDER ── */
+  ctx.strokeStyle='#00829c'; ctx.lineWidth=1.5; ctx.setLineDash([]);
+  ctx.strokeRect(1,1,W-2,H-2);
+  ctx.restore(); // end zoom/pan transform
+  // Update zoom % in status bar
+  const zEl = document.getElementById('sbZoom');
+  if(zEl) zEl.textContent = Math.round(_zScale*100)+'%';
+}
+
+/* ══════════════════════════════════════════
+   TABLE VIEW
+══════════════════════════════════════════ */
+function renderTable(){
+  const cont = document.getElementById('tblContent');
+  const datum = datumLabel();
+  let html = `<h2 style="font-family:'IBM Plex Mono';font-size:13px;color:#00829c;margin-bottom:12px;">
+    ${document.getElementById('wellName').value||'WELL-A'} — Equipment Table</h2>`;
+
+  // Short String table
+  html += `<h3 style="font-family:'IBM Plex Mono';font-size:10px;color:#0a2a42;margin:8px 0 4px;">
+    ${document.getElementById('tub1Label').value||'SHORT STRING'} (${document.getElementById('tub1OD').value}" ${document.getElementById('tub1Wt').value}PPF ${document.getElementById('tub1Grade').value} ${document.getElementById('tub1Conn').value})</h3>`;
+  html += buildTableHTML(completionElems.filter(e=>e.tubingStr==='1'||e.tubingStr==='both'), datum);
+
+  html += `<h3 style="font-family:'IBM Plex Mono';font-size:10px;color:#0a2a42;margin:16px 0 4px;">
+    ${document.getElementById('tub2Label').value||'LONG STRING'} (${document.getElementById('tub2OD').value}" ${document.getElementById('tub2Wt').value}PPF ${document.getElementById('tub2Grade').value} ${document.getElementById('tub2Conn').value})</h3>`;
+  html += buildTableHTML(completionElems.filter(e=>e.tubingStr==='2'||e.tubingStr==='both'), datum);
+
+  // Casing strings
+  html += `<h3 style="font-family:'IBM Plex Mono';font-size:10px;color:#0a2a42;margin:16px 0 4px;">CASING PROGRAMME</h3>`;
+  html += `<table style="border-collapse:collapse;width:100%;font-size:9px;">
+    <thead><tr style="background:#b8d0e0;">
+      <th style="padding:4px 8px;border:1px solid #5a8aaa;text-align:left;">STRING</th>
+      <th style="padding:4px 8px;border:1px solid #5a8aaa;">OD (in)</th>
+      <th style="padding:4px 8px;border:1px solid #5a8aaa;">ID (in)</th>
+      <th style="padding:4px 8px;border:1px solid #5a8aaa;">GRADE</th>
+      <th style="padding:4px 8px;border:1px solid #5a8aaa;">WT (ppf)</th>
+      <th style="padding:4px 8px;border:1px solid #5a8aaa;">TOP (${unitLabel()})</th>
+      <th style="padding:4px 8px;border:1px solid #5a8aaa;">SHOE (${unitLabel()})</th>
+    </tr></thead><tbody>`;
+  casingStrings.forEach(s=>{
+    html+=`<tr><td style="padding:3px 8px;border:1px solid #d0d8e0;">${s.label}</td>
+      <td style="padding:3px 8px;border:1px solid #d0d8e0;text-align:center;">${s.od}</td>
+      <td style="padding:3px 8px;border:1px solid #d0d8e0;text-align:center;">${s.id}</td>
+      <td style="padding:3px 8px;border:1px solid #d0d8e0;text-align:center;">${s.grade}</td>
+      <td style="padding:3px 8px;border:1px solid #d0d8e0;text-align:center;">${s.weight}</td>
+      <td style="padding:3px 8px;border:1px solid #d0d8e0;text-align:center;">${toDisplay(s.top)}</td>
+      <td style="padding:3px 8px;border:1px solid #d0d8e0;text-align:center;">${toDisplay(s.bottom)}</td>
+    </tr>`;
+  });
+  html+='</tbody></table>';
+
+  cont.innerHTML = html;
+}
+
+function buildTableHTML(elems, datum){
+  if(!elems.length) return '<p style="color:#666;font-size:9px;padding:4px;">No elements.</p>';
+  let html=`<table style="border-collapse:collapse;width:100%;font-size:9px;">
+    <thead><tr style="background:#b8d0e0;">
+      <th style="padding:4px 6px;border:1px solid #5a8aaa;text-align:left;">DEPTH (${datum})</th>
+      <th style="padding:4px 6px;border:1px solid #5a8aaa;text-align:left;">INC (°)</th>
+      <th style="padding:4px 6px;border:1px solid #5a8aaa;text-align:left;">EQUIPMENT</th>
+      <th style="padding:4px 6px;border:1px solid #5a8aaa;text-align:center;">MIN OD (in)</th>
+      <th style="padding:4px 6px;border:1px solid #5a8aaa;text-align:center;">MAX OD (in)</th>
+    </tr></thead><tbody>`;
+  elems.sort((a,b)=>a.depth-b.depth).forEach(e=>{
+    html+=`<tr><td style="padding:2px 6px;border:1px solid #d0d8e0;">${toDisplay(e.depth)}</td>
+      <td style="padding:2px 6px;border:1px solid #d0d8e0;">${e.inc.toFixed(1)}</td>
+      <td style="padding:2px 6px;border:1px solid #d0d8e0;">${e.label}</td>
+      <td style="padding:2px 6px;border:1px solid #d0d8e0;text-align:center;">${e.minOD.toFixed(3)}</td>
+      <td style="padding:2px 6px;border:1px solid #d0d8e0;text-align:center;">${e.maxOD.toFixed(3)}</td>
+    </tr>`;
+  });
+  html+='</tbody></table>';
+  return html;
+}
+
+/* ══════════════════════════════════════════
+   EXPORT PNG
+══════════════════════════════════════════ */
+function exportPNG(){
+  const c = document.getElementById('canvas2d');
+  const link = document.createElement('a');
+  link.download = (document.getElementById('wellName').value||'well-sketch')+'.png';
+  link.href = c.toDataURL('image/png');
+  link.click();
+}
+
+/* ══════════════════════════════════════════
+   EXPORT XLSX  (SheetJS)
+══════════════════════════════════════════ */
+function exportXLSX(){
+  if(typeof XLSX === 'undefined'){ alert('SheetJS library not loaded yet. Please wait a moment and try again.'); return; }
+
+  const wb = XLSX.utils.book_new();
+  const wellName = document.getElementById('wellName').value || 'WELL-A';
+  const wellField = document.getElementById('wellField').value || 'Field X';
+  const datum = datumLabel();
+  const u = unitLabel();
+
+  /* ── Helper: apply header style ── */
+  const hdrStyle = {
+    font: { bold: true, color: { rgb: 'FFFFFFFF' }, name: 'Arial', sz: 9 },
+    fill: { fgColor: { rgb: 'FF0A2A42' }, patternType: 'solid' },
+    alignment: { horizontal: 'center', vertical: 'center', wrapText: true },
+    border: { top:{style:'thin',color:{rgb:'FF5A8AAA'}}, bottom:{style:'thin',color:{rgb:'FF5A8AAA'}},
+              left:{style:'thin',color:{rgb:'FF5A8AAA'}}, right:{style:'thin',color:{rgb:'FF5A8AAA'}} }
+  };
+  const subHdrStyle = {
+    font: { bold: true, color: { rgb: 'FF0A2A42' }, name: 'Arial', sz: 9 },
+    fill: { fgColor: { rgb: 'FFB8D0E0' }, patternType: 'solid' },
+    alignment: { horizontal: 'center', vertical: 'center', wrapText: true },
+    border: { top:{style:'thin',color:{rgb:'FF5A8AAA'}}, bottom:{style:'thin',color:{rgb:'FF5A8AAA'}},
+              left:{style:'thin',color:{rgb:'FF5A8AAA'}}, right:{style:'thin',color:{rgb:'FF5A8AAA'}} }
+  };
+  const dataStyle = {
+    font: { name: 'Arial', sz: 9 },
+    alignment: { vertical: 'center' },
+    border: { top:{style:'thin',color:{rgb:'FFD0D8E0'}}, bottom:{style:'thin',color:{rgb:'FFD0D8E0'}},
+              left:{style:'thin',color:{rgb:'FFD0D8E0'}}, right:{style:'thin',color:{rgb:'FFD0D8E0'}} }
+  };
+  const dataStyleC = Object.assign({}, dataStyle, { alignment: { horizontal:'center', vertical:'center' } });
+  const titleStyle = {
+    font: { bold: true, name: 'Arial', sz: 12, color:{ rgb:'FF00829C' } },
+    alignment: { horizontal: 'left', vertical: 'center' }
+  };
+  const metaStyle = {
+    font: { name: 'Arial', sz: 9, color:{ rgb:'FF445566' } },
+    alignment: { horizontal: 'left', vertical: 'center' }
+  };
+  const sectionStyle = {
+    font: { bold: true, name: 'Arial', sz: 9, color:{ rgb:'FF004466' } },
+    fill: { fgColor: { rgb: 'FFD0E8F0' }, patternType: 'solid' },
+    alignment: { horizontal: 'left', vertical: 'center' },
+    border: { bottom:{style:'medium',color:{rgb:'FF00829C'}} }
+  };
+
+  function styleCell(ws, addr, style){
+    if(!ws[addr]) ws[addr] = { t:'s', v:'' };
+    ws[addr].s = style;
+  }
+  function setCellVal(ws, r, c, val, style, type){
+    const addr = XLSX.utils.encode_cell({r, c});
+    const t = type || (typeof val === 'number' ? 'n' : 's');
+    ws[addr] = { t, v: val, s: style };
+  }
+  function setRange(ws, rows){
+    if(!ws['!ref']){
+      ws['!ref'] = XLSX.utils.encode_range({s:{r:0,c:0}, e:{r:rows-1,c:10}});
+    } else {
+      const r = XLSX.utils.decode_range(ws['!ref']);
+      r.e.r = Math.max(r.e.r, rows - 1);
+      ws['!ref'] = XLSX.utils.encode_range(r);
+    }
+  }
+
+  /* ══════════════════════════════════════════
+     SHEET 1 — COVER / SUMMARY
+  ══════════════════════════════════════════ */
+  (function(){
+    const ws = {};
+    let row = 0;
+
+    // Title block
+    setCellVal(ws, row, 0, 'WELL COMPLETION SCHEMATIC', titleStyle); row++;
+    setCellVal(ws, row, 0, `Well: ${wellName}`, metaStyle);
+    setCellVal(ws, row, 2, `Field: ${wellField}`, metaStyle); row++;
+    setCellVal(ws, row, 0, `Depth Datum: ${datum}`, metaStyle);
+    setCellVal(ws, row, 2, `Units: ${u}`, metaStyle);
+    setCellVal(ws, row, 4, `Export Date: ${new Date().toLocaleDateString()}`, metaStyle); row++;
+    row++; // blank
+
+    // ── Tubing Summary ──
+    setCellVal(ws, row, 0, 'TUBING STRINGS SUMMARY', sectionStyle); row++;
+    const tubHdr = ['STRING', 'OD (in)', 'ID (in)', 'WEIGHT (ppf)', 'GRADE', 'CONNECTION', `TOP (${u})`, `SHOE (${u})`];
+    tubHdr.forEach((h,c) => setCellVal(ws, row, c, h, subHdrStyle)); row++;
+
+    const tub1on = document.getElementById('tub1on').checked;
+    const tub2on = document.getElementById('tub2on').checked;
+    if(tub1on){
+      const od1 = parseFloat(document.getElementById('tub1OD').value)||3.5;
+      const id1 = getTubingID(document.getElementById('tub1OD').value);
+      [document.getElementById('tub1Label').value||'SHORT STRING', od1, id1,
+       parseFloat(document.getElementById('tub1Wt').value)||9.2,
+       document.getElementById('tub1Grade').value||'L-80',
+       document.getElementById('tub1Conn').value||'FOX-K',
+       toDisplay(fromDisplay(parseFloat(document.getElementById('tub1Top').value)||0)),
+       toDisplay(fromDisplay(parseFloat(document.getElementById('tub1Bot').value)||3000))
+      ].forEach((v,c) => setCellVal(ws, row, c, v, c===0?dataStyle:dataStyleC));
+      row++;
+    }
+    if(tub2on){
+      const od2 = parseFloat(document.getElementById('tub2OD').value)||3.5;
+      const id2 = getTubingID(document.getElementById('tub2OD').value);
+      [document.getElementById('tub2Label').value||'LONG STRING', od2, id2,
+       parseFloat(document.getElementById('tub2Wt').value)||9.2,
+       document.getElementById('tub2Grade').value||'L-80',
+       document.getElementById('tub2Conn').value||'FOX-K',
+       toDisplay(fromDisplay(parseFloat(document.getElementById('tub2Top').value)||0)),
+       toDisplay(fromDisplay(parseFloat(document.getElementById('tub2Bot').value)||3761))
+      ].forEach((v,c) => setCellVal(ws, row, c, v, c===0?dataStyle:dataStyleC));
+      row++;
+    }
+    row++; // blank
+
+    // ── Casing Summary ──
+    setCellVal(ws, row, 0, 'CASING PROGRAMME', sectionStyle); row++;
+    const casHdr = ['STRING', 'OD (in)', 'ID (in)', 'GRADE', 'WEIGHT (ppf)', 'CONNECTION', `TOP (${u})`, `SHOE (${u})`];
+    casHdr.forEach((h,c) => setCellVal(ws, row, c, h, subHdrStyle)); row++;
+    casingStrings.forEach(s => {
+      [s.label, s.od, s.id, s.grade, s.weight, s.conn, toDisplay(s.top), toDisplay(s.bottom)]
+        .forEach((v,c) => setCellVal(ws, row, c, v, c===0?dataStyle:dataStyleC));
+      row++;
+    });
+    row++; // blank
+
+    // ── Formation Zones ──
+    if(formationZones.length){
+      setCellVal(ws, row, 0, 'FORMATION ZONES', sectionStyle); row++;
+      const zHdr = ['ZONE NAME', `TOP PERF (${u})`, `BOTTOM PERF (${u})`, 'RESERVOIR PRESSURE (psi)'];
+      zHdr.forEach((h,c) => setCellVal(ws, row, c, h, subHdrStyle)); row++;
+      formationZones.forEach(z => {
+        [z.name, toDisplay(z.top), toDisplay(z.bot), z.pressure]
+          .forEach((v,c) => setCellVal(ws, row, c, v, c===0?dataStyle:dataStyleC));
+        row++;
+      });
+    }
+
+    ws['!cols'] = [{wch:30},{wch:10},{wch:10},{wch:14},{wch:12},{wch:14},{wch:12},{wch:12}];
+    ws['!ref'] = XLSX.utils.encode_range({s:{r:0,c:0}, e:{r:row,c:7}});
+    XLSX.utils.book_append_sheet(wb, ws, 'Summary');
+  })();
+
+  /* ══════════════════════════════════════════
+     SHEET 2 — SHORT STRING EQUIPMENT TABLE
+  ══════════════════════════════════════════ */
+  function buildCompletionSheet(sheetLabel, tubingStr){
+    const ws = {};
+    let row = 0;
+
+    const lbl = tubingStr === '1'
+      ? (document.getElementById('tub1Label').value || 'SHORT STRING')
+      : (document.getElementById('tub2Label').value || 'LONG STRING');
+    const od  = tubingStr === '1'
+      ? (document.getElementById('tub1OD').value || '3.5')
+      : (document.getElementById('tub2OD').value || '3.5');
+    const wt  = tubingStr === '1'
+      ? (document.getElementById('tub1Wt').value || '9.2')
+      : (document.getElementById('tub2Wt').value || '9.2');
+    const gr  = tubingStr === '1'
+      ? (document.getElementById('tub1Grade').value || 'L-80')
+      : (document.getElementById('tub2Grade').value || 'L-80');
+    const cn  = tubingStr === '1'
+      ? (document.getElementById('tub1Conn').value || 'FOX-K')
+      : (document.getElementById('tub2Conn').value || 'FOX-K');
+
+    // Well + string info
+    setCellVal(ws, row, 0, `${wellName} — ${lbl}`, titleStyle); row++;
+    setCellVal(ws, row, 0, `${od}" · ${wt} PPF · ${gr} · ${cn}`, metaStyle);
+    setCellVal(ws, row, 3, `Field: ${wellField}`, metaStyle); row++;
+    row++; // blank
+
+    // Column headers
+    const cols = [`DEPTH (${datum})`, `INC (°)`, 'EQUIPMENT / DESCRIPTION', 'MIN OD (in)', 'MAX OD (in)', 'LENGTH (m)', 'TYPE', 'STRING'];
+    cols.forEach((h,c) => setCellVal(ws, row, c, h, hdrStyle)); row++;
+
+    // Filter elements for this string (include 'both')
+    const elems = completionElems
+      .filter(e => e.tubingStr === tubingStr || e.tubingStr === 'both')
+      .sort((a,b) => a.depth - b.depth);
+
+    elems.forEach(e => {
+      const m = ELEM_META[e.type] || ELEM_META.nipple;
+      [toDisplay(e.depth), parseFloat(e.inc.toFixed(1)), e.label,
+       e.minOD, e.maxOD, e.length || 3, m.label,
+       e.tubingStr === 'both' ? 'BOTH' : tubingStr === '1' ? 'SHORT STRING' : 'LONG STRING'
+      ].forEach((v,c) => {
+        const isNum = typeof v === 'number';
+        setCellVal(ws, row, c, v, c===0||c===2||c===6||c===7 ? dataStyle : dataStyleC, isNum?'n':'s');
+      });
+      row++;
+    });
+
+    if(!elems.length){
+      setCellVal(ws, row, 0, 'No completion elements defined for this string.', metaStyle); row++;
+    }
+
+    ws['!cols'] = [{wch:14},{wch:8},{wch:40},{wch:12},{wch:12},{wch:10},{wch:22},{wch:14}];
+    ws['!ref'] = XLSX.utils.encode_range({s:{r:0,c:0}, e:{r:row,c:7}});
+    XLSX.utils.book_append_sheet(wb, ws, sheetLabel);
+  }
+
+  buildCompletionSheet('Short String', '1');
+  buildCompletionSheet('Long String', '2');
+
+  /* ══════════════════════════════════════════
+     SHEET 4 — FULL EQUIPMENT REGISTER (all elements)
+  ══════════════════════════════════════════ */
+  (function(){
+    const ws = {};
+    let row = 0;
+
+    setCellVal(ws, row, 0, `${wellName} — Full Equipment Register`, titleStyle); row++;
+    setCellVal(ws, row, 0, `Field: ${wellField} · Datum: ${datum} · Units: ${u}`, metaStyle); row++;
+    row++;
+
+    const cols = [`DEPTH (${datum})`, `INC (°)`, 'EQUIPMENT / DESCRIPTION', 'MIN OD (in)', 'MAX OD (in)', 'LENGTH (m)', 'TYPE', 'STRING'];
+    cols.forEach((h,c) => setCellVal(ws, row, c, h, hdrStyle)); row++;
+
+    const allElems = [...completionElems].sort((a,b) => a.depth - b.depth);
+    allElems.forEach(e => {
+      const m = ELEM_META[e.type] || ELEM_META.nipple;
+      const strLabel = e.tubingStr === 'both' ? 'BOTH' : e.tubingStr === '1' ? 'SHORT STRING' : 'LONG STRING';
+      [toDisplay(e.depth), parseFloat(e.inc.toFixed(1)), e.label,
+       e.minOD, e.maxOD, e.length || 3, m.label, strLabel
+      ].forEach((v,c) => {
+        const isNum = typeof v === 'number';
+        setCellVal(ws, row, c, v, c===0||c===2||c===6||c===7 ? dataStyle : dataStyleC, isNum?'n':'s');
+      });
+      row++;
+    });
+
+    if(!allElems.length){
+      setCellVal(ws, row, 0, 'No completion elements defined.', metaStyle); row++;
+    }
+
+    ws['!cols'] = [{wch:14},{wch:8},{wch:40},{wch:12},{wch:12},{wch:10},{wch:22},{wch:14}];
+    ws['!ref'] = XLSX.utils.encode_range({s:{r:0,c:0}, e:{r:row,c:7}});
+    XLSX.utils.book_append_sheet(wb, ws, 'All Elements');
+  })();
+
+  /* ══════════════════════════════════════════
+     SHEET 5 — CASING DB EXTRACT
+  ══════════════════════════════════════════ */
+  (function(){
+    const ws = {};
+    let row = 0;
+
+    setCellVal(ws, row, 0, `${wellName} — Casing Programme Detail`, titleStyle); row++;
+    row++;
+
+    const cols = ['STRING LABEL', 'OD (in)', 'ID (in)', 'WALL (in)', 'GRADE', 'WEIGHT (ppf)', 'CONNECTION', `TOP (${u})`, `SHOE (${u})`, 'INTERVAL (m)'];
+    cols.forEach((h,c) => setCellVal(ws, row, c, h, hdrStyle)); row++;
+
+    casingStrings.forEach(s => {
+      const wall = ((s.od - s.id) / 2).toFixed(3);
+      const interval = Math.abs(s.bottom - s.top).toFixed(1);
+      [s.label, s.od, s.id, parseFloat(wall), s.grade, s.weight, s.conn,
+       toDisplay(s.top), toDisplay(s.bottom), parseFloat(interval)
+      ].forEach((v,c) => {
+        const isNum = typeof v === 'number';
+        setCellVal(ws, row, c, v, c===0||c===4||c===6 ? dataStyle : dataStyleC, isNum?'n':'s');
+      });
+      row++;
+    });
+
+    if(!casingStrings.length){
+      setCellVal(ws, row, 0, 'No casing strings defined.', metaStyle); row++;
+    }
+
+    ws['!cols'] = [{wch:28},{wch:10},{wch:10},{wch:10},{wch:10},{wch:14},{wch:14},{wch:12},{wch:12},{wch:14}];
+    ws['!ref'] = XLSX.utils.encode_range({s:{r:0,c:0}, e:{r:row,c:9}});
+    XLSX.utils.book_append_sheet(wb, ws, 'Casing Programme');
+  })();
+
+  /* ══════════════════════════════════════════
+     SHEET 0 — WELL SCHEMATIC (image embed)
+     Render to offscreen canvas at 2× resolution,
+     inject PNG into the XLSX ZIP as a drawing.
+  ══════════════════════════════════════════ */
+  function embedSchematicAndSave(pngBase64){
+    /* ── 1. Add a placeholder "Schematic" sheet as sheet[0] ── */
+    const wsImg = {};
+    // Title rows so the sheet isn't empty (image anchors to A1)
+    setCellVal(wsImg, 0, 0, `${wellName} — Engineering Schematic`, titleStyle);
+    setCellVal(wsImg, 1, 0, `Field: ${wellField}  ·  Datum: ${datum}  ·  Units: ${u}  ·  ${new Date().toLocaleDateString()}`, metaStyle);
+    wsImg['!ref'] = 'A1:J60';
+    // Row heights: title rows short, then tall rows to fit image
+    wsImg['!rows'] = [{hpt:18},{hpt:14}];
+    for(let i=2;i<60;i++) wsImg['!rows'].push({hpt:20});
+    wsImg['!cols'] = Array(10).fill({wch:12});
+
+    // Prepend to workbook so it's the first sheet
+    XLSX.utils.book_append_sheet(wb, wsImg, 'Schematic');
+    // Move it to position 0
+    const names = wb.SheetNames;
+    names.unshift(names.pop());
+
+    /* ── 2. Serialise workbook to ZIP bytes ── */
+    const wbout = XLSX.write(wb, { bookType:'xlsx', type:'binary', cellStyles:true });
+
+    /* ── 3. Re-open ZIP and inject image + drawing XML ── */
+    // We use JSZip which SheetJS bundles internally as XLSX.CFB / or load separately.
+    // SheetJS 0.18 exposes XLSX.SSF but not JSZip directly.
+    // We'll use a minimal ZIP patcher that reads the binary, finds the central directory,
+    // and appends our new files — but that's ~300 lines.
+    // Simpler: use the FileReader + DataTransferItem approach won't work either.
+    // BEST APPROACH: Use the fact that XLSX.write returns a CFB/ZIP we can decode
+    // with XLSX.CFB, add entries, then re-encode.
+
+    // Convert binary string to Uint8Array
+    const buf = new Uint8Array(wbout.length);
+    for(let i=0;i<wbout.length;i++) buf[i] = wbout.charCodeAt(i) & 0xFF;
+
+    // Use JSZip (loaded below if available) or fall back to ArrayBuffer download
+    if(typeof JSZip !== 'undefined'){
+      JSZip.loadAsync(buf).then(zip => {
+        injectImageIntoZip(zip, pngBase64, wellName);
+      });
+    } else {
+      // Load JSZip dynamically then retry
+      const s = document.createElement('script');
+      s.src = 'https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js';
+      s.onload = () => {
+        JSZip.loadAsync(buf).then(zip => {
+          injectImageIntoZip(zip, pngBase64, wellName);
+        });
+      };
+      s.onerror = () => {
+        // JSZip failed to load — save without image
+        console.warn('JSZip unavailable; saving without schematic image.');
+        const blob = new Blob([buf], {type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = filename;
+        a.click();
+      };
+      document.head.appendChild(s);
+    }
+  }
+
+  function injectImageIntoZip(zip, pngBase64, wellName){
+    /* Strip data-URL prefix if present */
+    const b64 = pngBase64.replace(/^data:image\/png;base64,/, '');
+
+    /* ── Image media file ── */
+    zip.file('xl/media/schematic.png', b64, {base64: true});
+
+    /* ── Drawing XML — fully editable: move & resize freely ── */
+    const drawingXml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<xdr:wsDr xmlns:xdr="http://schemas.openxmlformats.org/drawingml/2006/spreadsheetDrawing"
+           xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main"
+           xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">
+  <xdr:twoCellAnchor editAs="twoCell">
+    <xdr:from><xdr:col>0</xdr:col><xdr:colOff>0</xdr:colOff><xdr:row>2</xdr:row><xdr:rowOff>0</xdr:rowOff></xdr:from>
+    <xdr:to><xdr:col>9</xdr:col><xdr:colOff>914400</xdr:colOff><xdr:row>57</xdr:row><xdr:rowOff>0</xdr:rowOff></xdr:to>
+    <xdr:pic>
+      <xdr:nvPicPr>
+        <xdr:cNvPr id="2" name="WellSchematic" descr="Well Engineering Schematic"/>
+        <xdr:cNvPicPr>
+          <a:picLocks noChangeAspect="0" noMove="0" noResize="0" noSelect="0"/>
+        </xdr:cNvPicPr>
+      </xdr:nvPicPr>
+      <xdr:blipFill>
+        <a:blip r:embed="rId1"/>
+        <a:stretch><a:fillRect/></a:stretch>
+      </xdr:blipFill>
+      <xdr:spPr>
+        <a:xfrm><a:off x="0" y="0"/><a:ext cx="0" cy="0"/></a:xfrm>
+        <a:prstGeom prst="rect"><a:avLst/></a:prstGeom>
+        <a:noFill/>
+        <a:ln><a:noFill/></a:ln>
+      </xdr:spPr>
+    </xdr:pic>
+    <xdr:clientData fLocksWithSheet="0"/>
+  </xdr:twoCellAnchor>
+</xdr:wsDr>`;
+
+    /* ── Drawing relationship file ── */
+    const drawingRelsXml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+  <Relationship Id="rId1"
+    Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image"
+    Target="../media/schematic.png"/>
+</Relationships>`;
+
+    /* ── Determine sheet index for Schematic (it's sheet1 = index 0) ── */
+    // SheetNames[0] = 'Schematic' after our prepend above
+    // The XLSX file uses sheet1.xml, sheet2.xml etc. for sheets in order
+    // We need to find which sheetN.xml corresponds to our Schematic sheet.
+    // SheetJS names them sequentially: first appended = sheet1, etc.
+    // Since we moved Schematic to index 0 via unshift, it maps to sheet1.xml
+    // BUT SheetJS numbers files in append order, not SheetNames order.
+    // We detect by checking xl/worksheets/ entries count.
+    const sheetFiles = Object.keys(zip.files).filter(f => /^xl\/worksheets\/sheet\d+\.xml$/.test(f));
+    // Schematic was last appended (we unshifted the name but file is last)
+    sheetFiles.sort((a,b)=>{
+      const na = parseInt(a.match(/sheet(\d+)/)[1]);
+      const nb = parseInt(b.match(/sheet(\d+)/)[1]);
+      return na-nb;
+    });
+    // Last file = Schematic (last appended)
+    const schematicSheetFile = sheetFiles[sheetFiles.length - 1];
+    const schematicSheetNum  = schematicSheetFile.match(/sheet(\d+)/)[1];
+
+    const drawingPath    = `xl/drawings/drawing${schematicSheetNum}.xml`;
+    const drawingRelsPath= `xl/drawings/_rels/drawing${schematicSheetNum}.xml.rels`;
+
+    zip.file(drawingPath, drawingXml);
+    zip.file(drawingRelsPath, drawingRelsXml);
+
+    /* ── Patch the sheet XML to reference the drawing ── */
+    zip.file(schematicSheetFile).async('string').then(sheetXml => {
+      // Inject <drawing r:id="rId_draw"/> before </worksheet>
+      const patched = sheetXml.replace(
+        '</worksheet>',
+        '<drawing xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" r:id="rId_draw"/></worksheet>'
+      );
+      zip.file(schematicSheetFile, patched);
+
+      /* ── Patch the sheet's _rels file to add drawing relationship ── */
+      const sheetRelsPath = `xl/worksheets/_rels/sheet${schematicSheetNum}.xml.rels`;
+      const getOrCreateRels = zip.files[sheetRelsPath]
+        ? zip.file(sheetRelsPath).async('string')
+        : Promise.resolve(`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"></Relationships>`);
+
+      getOrCreateRels.then(relsXml => {
+        const patchedRels = relsXml.replace(
+          '</Relationships>',
+          `<Relationship Id="rId_draw" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/drawing" Target="../drawings/drawing${schematicSheetNum}.xml"/></Relationships>`
+        );
+        zip.file(sheetRelsPath, patchedRels);
+
+        /* ── Patch [Content_Types].xml to register drawing + image ── */
+        zip.file('[Content_Types].xml').async('string').then(ctXml => {
+          let ct = ctXml;
+          if(!ct.includes('image/png')){
+            ct = ct.replace('</Types>',
+              '<Default Extension="png" ContentType="image/png"/></Types>');
+          }
+          const drawingContentType = `<Override PartName="/${drawingPath}" ContentType="application/vnd.openxmlformats-officedocument.drawing+xml"/>`;
+          if(!ct.includes(drawingPath)){
+            ct = ct.replace('</Types>', drawingContentType + '</Types>');
+          }
+          zip.file('[Content_Types].xml', ct);
+
+          /* ── Generate final blob and trigger download ── */
+          zip.generateAsync({type:'blob', mimeType:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'})
+            .then(blob => {
+              const fn = `${wellName.replace(/\s+/g,'-')}_Completion_${new Date().toISOString().slice(0,10)}.xlsx`;
+              const a = document.createElement('a');
+              a.href = URL.createObjectURL(blob);
+              a.download = fn;
+              document.body.appendChild(a);
+              a.click();
+              document.body.removeChild(a);
+              setTimeout(() => URL.revokeObjectURL(a.href), 5000);
+            });
+        });
+      });
+    });
+  }
+
+  /* ── Render schematic to offscreen canvas (full clean view, no zoom) ── */
+  const filename = `${wellName.replace(/\s+/g,'-')}_Completion_${new Date().toISOString().slice(0,10)}.xlsx`;
+
+  (function renderOffscreen(){
+    const EXPORT_W = 1800, EXPORT_H = 2400;
+    const oc = document.createElement('canvas');
+    oc.width  = EXPORT_W;
+    oc.height = EXPORT_H;
+    const octx = oc.getContext('2d');
+
+    // Save zoom state, reset for clean export render
+    const savedScale = _zScale, savedOffX = _zOffX, savedOffY = _zOffY;
+    _zScale = 1; _zOffX = 0; _zOffY = 0;
+
+    // Temporarily swap canvas so render2D draws into offscreen canvas
+    const realCanvas = document.getElementById('canvas2d');
+    const realWrap   = document.getElementById('wrap2d');
+
+    // Monkey-patch getElementById for canvas2d & wrap2d during render
+    const origGetById = document.getElementById.bind(document);
+    const _mockCanvas = Object.create(oc);
+    // We'll render directly by calling the draw logic with our octx
+    // Simplest: resize real canvas temporarily to export size, render, grab, restore
+    const prevW = realCanvas.width, prevH = realCanvas.height;
+    const prevSW = realCanvas.style.width, prevSH = realCanvas.style.height;
+
+    realCanvas.width  = EXPORT_W;
+    realCanvas.height = EXPORT_H;
+    realCanvas.style.width  = EXPORT_W + 'px';
+    realCanvas.style.height = EXPORT_H + 'px';
+
+    // Patch wrap clientWidth/Height
+    Object.defineProperty(realWrap, '_exportW', {value: EXPORT_W, configurable:true});
+    Object.defineProperty(realWrap, '_exportH', {value: EXPORT_H, configurable:true});
+    const origClientWidth  = Object.getOwnPropertyDescriptor(Element.prototype, 'clientWidth');
+    const origClientHeight = Object.getOwnPropertyDescriptor(Element.prototype, 'clientHeight');
+    Object.defineProperty(realWrap, 'clientWidth',  {get(){ return EXPORT_W; }, configurable:true});
+    Object.defineProperty(realWrap, 'clientHeight', {get(){ return EXPORT_H; }, configurable:true});
+
+    render2D();
+
+    // Grab PNG from the canvas
+    const pngDataUrl = realCanvas.toDataURL('image/png', 1.0);
+
+    // Restore everything
+    delete realWrap.clientWidth;
+    delete realWrap.clientHeight;
+    realCanvas.width  = prevW;
+    realCanvas.height = prevH;
+    realCanvas.style.width  = prevSW;
+    realCanvas.style.height = prevSH;
+    _zScale = savedScale; _zOffX = savedOffX; _zOffY = savedOffY;
+    render2D(); // restore visual
+
+    embedSchematicAndSave(pngDataUrl);
+  })();
+}
+
+/* ══════════════════════════════════════════
+   RENDER ALL
+══════════════════════════════════════════ */
+function renderAll(){
+  updateStatus();
+  const v2 = document.getElementById('wrap2d').style.display;
+  const v3 = document.getElementById('wrap3d').style.display;
+  if(v3!=='none') render3D();
+  else if(v2!=='none') render2D();
+  else renderTable();
+}
+
+function updateTubing1(){ renderAll(); }
+function updateTubing2(){ renderAll(); }
+
+
+/* ══════════════════════════════════════════
+   3D RENDER ENGINE  (Three.js r128)
+══════════════════════════════════════════ */
+let _3d = null; // singleton scene state
+
+function init3D(W, H){
+  const canvas = document.getElementById('canvas3d');
+  const renderer = new THREE.WebGLRenderer({canvas, antialias:true, alpha:false});
+  renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+  renderer.setSize(W, H);
+  renderer.shadowMap.enabled = true;
+
+  const scene = new THREE.Scene();
+  scene.background = new THREE.Color(0xdde6ef);
+  scene.fog = new THREE.FogExp2(0xdde6ef, 0.00012);
+
+  const camera = new THREE.PerspectiveCamera(45, W/H, 0.1, 50000);
+
+  let isPointerDown = false, lastX = 0, lastY = 0, pointerBtn = 0;
+  let spherical = { theta: -0.5, phi: 1.1, r: 2800 };
+  let target = new THREE.Vector3(0, -2000, 0);
+
+  function applyCam(){
+    const x = spherical.r * Math.sin(spherical.phi) * Math.sin(spherical.theta);
+    const y = spherical.r * Math.cos(spherical.phi);
+    const z = spherical.r * Math.sin(spherical.phi) * Math.cos(spherical.theta);
+    camera.position.set(target.x + x, target.y + y, target.z + z);
+    camera.lookAt(target);
+  }
+  applyCam();
+
+  canvas.addEventListener('pointerdown', e => {
+    isPointerDown = true; lastX = e.clientX; lastY = e.clientY; pointerBtn = e.button;
+    canvas.setPointerCapture(e.pointerId);
+  });
+  canvas.addEventListener('pointerup', () => { isPointerDown = false; });
+  canvas.addEventListener('pointermove', e => {
+    if(!isPointerDown) return;
+    const dx = e.clientX - lastX, dy = e.clientY - lastY;
+    lastX = e.clientX; lastY = e.clientY;
+    if(pointerBtn === 0 && !e.shiftKey){
+      spherical.theta -= dx * 0.006;
+      spherical.phi   = Math.max(0.05, Math.min(Math.PI - 0.05, spherical.phi + dy * 0.006));
+    } else {
+      const panSpeed = spherical.r * 0.001;
+      const right = new THREE.Vector3();
+      const fwd   = new THREE.Vector3();
+      camera.getWorldDirection(fwd);
+      right.crossVectors(fwd, new THREE.Vector3(0,1,0)).normalize();
+      const upVec = new THREE.Vector3().crossVectors(right, fwd).normalize();
+      target.addScaledVector(right, -dx * panSpeed);
+      target.addScaledVector(upVec, dy * panSpeed);
+    }
+    applyCam(); renderer.render(scene, camera);
+  });
+  canvas.addEventListener('wheel', e => {
+    e.preventDefault();
+    spherical.r = Math.max(80, Math.min(12000, spherical.r * (e.deltaY > 0 ? 1.12 : 0.89)));
+    applyCam(); renderer.render(scene, camera);
+  }, {passive:false});
+  canvas.addEventListener('dblclick', () => {
+    spherical = { theta: -0.5, phi: 1.1, r: 2800 };
+    target.set(0, -2000, 0);
+    applyCam(); renderer.render(scene, camera);
+  });
+  canvas.addEventListener('contextmenu', e => e.preventDefault());
+
+  return { renderer, scene, camera, applyCam, _animating: false };
+}
+
+function hex2threeColor(h){ return new THREE.Color(h); }
+
+function makeTextSprite3D(text, color, scale){
+  scale = scale || 1.0;
+  const c = document.createElement('canvas');
+  c.width = 512; c.height = 64;
+  const ctx = c.getContext('2d');
+  ctx.clearRect(0,0,512,64);
+  ctx.fillStyle = 'rgba(255,255,255,0.82)';
+  ctx.beginPath();
+  ctx.roundRect(2,2,508,60,6);
+  ctx.fill();
+  ctx.font = 'bold 20px monospace';
+  ctx.fillStyle = color || '#003355';
+  ctx.textAlign = 'left';
+  ctx.fillText(text, 10, 38);
+  const tex = new THREE.CanvasTexture(c);
+  const mat = new THREE.SpriteMaterial({map:tex, transparent:true, depthTest:false});
+  const sprite = new THREE.Sprite(mat);
+  sprite.scale.set(280*scale, 35*scale, 1);
+  return sprite;
+}
+
+function build3DScene(scene, maxDepth){
+  // Clear
+  const toRemove = [];
+  scene.traverse(obj => { if(obj !== scene) toRemove.push(obj); });
+  toRemove.forEach(obj => {
+    if(obj.geometry) obj.geometry.dispose();
+    if(obj.material){
+      if(Array.isArray(obj.material)) obj.material.forEach(m=>m.dispose());
+      else obj.material.dispose();
+    }
+    scene.remove(obj);
+  });
+
+  // Lights
+  scene.add(new THREE.AmbientLight(0xffffff, 1.4));
+  const dirL = new THREE.DirectionalLight(0xfff5e0, 1.5);
+  dirL.position.set(300,-500,400); dirL.castShadow=true; scene.add(dirL);
+  const ptL = new THREE.PointLight(0xffeedd, 0.6, 4000); ptL.position.set(0,-200,0); scene.add(ptL);
+  const ptL2 = new THREE.PointLight(0xc8dce8, 0.4, 6000); ptL2.position.set(200,-3000,200); scene.add(ptL2);
+
+  const SEG = 32;
+  const R_SCALE = 10;
+
+  // Formation zones
+  formationZones.forEach((zone, zi) => {
+    const r = 260;
+    const geo = new THREE.CylinderGeometry(r, r, zone.bot - zone.top, 16, 1, true);
+    const mat = new THREE.MeshPhongMaterial({
+      color: new THREE.Color(0.72 + zi*0.06, 0.52, 0.12),
+      opacity: 0.22, transparent:true, side:THREE.BackSide
+    });
+    const m = new THREE.Mesh(geo, mat);
+    m.position.set(0, -(zone.top + zone.bot)/2, 0);
+    scene.add(m);
+    // Perforation tick rings
+    for(let d = zone.top; d <= zone.bot; d += 14){
+      const rGeo = new THREE.TorusGeometry(r * 0.28, 1.5, 6, SEG);
+      const rMat = new THREE.MeshPhongMaterial({color:0xcc6600});
+      const rm = new THREE.Mesh(rGeo, rMat);
+      rm.position.set(0,-d,0); rm.rotation.x = Math.PI/2;
+      scene.add(rm);
+    }
+    // Zone label
+    const sp = makeTextSprite3D(zone.name + ' (' + zone.pressure + ' psi)', '#ffaa44', 0.9);
+    sp.position.set(r*0.55, -(zone.top+zone.bot)/2, 0);
+    scene.add(sp);
+  });
+
+  // Depth grid rings
+  const gridMat = new THREE.LineBasicMaterial({color:0x7aaabb, opacity:0.55, transparent:true});
+  const step = niceStep(maxDepth, 12);
+  for(let d = 0; d <= maxDepth; d += step){
+    const pts = [];
+    for(let i = 0; i <= SEG; i++){
+      const a = (i/SEG)*Math.PI*2;
+      pts.push(new THREE.Vector3(Math.cos(a)*260, -d, Math.sin(a)*260));
+    }
+    const geo = new THREE.BufferGeometry().setFromPoints(pts);
+    scene.add(new THREE.Line(geo, gridMat));
+    // Depth label
+    const sp = makeTextSprite3D(d + ' m', '#005577', 0.7);
+    sp.position.set(-285, -d, 0);
+    scene.add(sp);
+  }
+
+  // Casings
+  const sortedCasings = [...casingStrings].sort((a,b)=>b.od-a.od);
+  sortedCasings.forEach((s, si) => {
+    if(s.visible3d === false) return; // hidden in 3D
+    const rO = s.od  * R_SCALE / 2;
+    const rI = s.id  * R_SCALE / 2;
+    const h  = s.bottom - s.top;
+    const yc = -(s.top + s.bottom) / 2;
+
+    // Look up per-casing opacity (use override if set, else global)
+    const origIdx = casingStrings.indexOf(s); // find original index for opacity lookup
+    const casOp = (origIdx >= 0 && _casingOpacity[origIdx] !== null && _casingOpacity[origIdx] !== undefined)
+                    ? _casingOpacity[origIdx]
+                    : _globalCasingOpacity;
+
+    // Cement annulus EXTERNAL to this casing: from prev casing ID down to this casing OD
+    const prevCas3d = sortedCasings.slice(0, si).reverse().find(c => c.visible3d !== false);
+    const outerCemR = prevCas3d ? (prevCas3d.id * R_SCALE / 2) : (rO + 4);
+    const cementTop3d = (s.cementTop !== undefined && s.cementTop !== null) ? s.cementTop : s.top;
+    const cemH = s.bottom - cementTop3d;
+    if(outerCemR - rO > 1 && cemH > 0){
+      const cGeo = new THREE.CylinderGeometry(outerCemR, outerCemR, cemH, SEG, 1, true);
+      const cMat = new THREE.MeshPhongMaterial({color:0xc8b44a, opacity:Math.max(0, _globalCementOpacity), transparent:true, side:THREE.BackSide});
+      const cm = new THREE.Mesh(cGeo, cMat);
+      cm.position.set(0, -(cementTop3d + cemH/2), 0);
+      scene.add(cm);
+      // TOC ring marker
+      const tocRGeo = new THREE.TorusGeometry(outerCemR + 1, 2, 6, SEG);
+      const tocRMat = new THREE.MeshPhongMaterial({color:0xc8b44a, opacity:0.7, transparent:true});
+      const tocR = new THREE.Mesh(tocRGeo, tocRMat);
+      tocR.position.set(0, -cementTop3d, 0); tocR.rotation.x = Math.PI/2;
+      scene.add(tocR);
+    }
+
+    // Outer casing wall
+    const casGeo = new THREE.CylinderGeometry(rO, rO, h, SEG, 1, true);
+    const casMat = new THREE.MeshPhongMaterial({
+      color: hex2threeColor(s.color), opacity: casOp, transparent: casOp < 1,
+      side:THREE.FrontSide, shininess:55, specular:new THREE.Color(0xffffff)
+    });
+    const casMesh = new THREE.Mesh(casGeo, casMat);
+    casMesh.position.set(0, yc, 0);
+    scene.add(casMesh);
+
+    // Inner wall (dark backface)
+    const casInGeo = new THREE.CylinderGeometry(rI, rI, h, SEG, 1, true);
+    const casInMat = new THREE.MeshPhongMaterial({color:0x8aaabb, opacity:0.25, transparent:true, side:THREE.BackSide});
+    const casIn = new THREE.Mesh(casInGeo, casInMat);
+    casIn.position.set(0, yc, 0);
+    scene.add(casIn);
+
+    // Top collar ring
+    const trGeo = new THREE.TorusGeometry(rO, 2, 8, SEG);
+    const trMat = new THREE.MeshPhongMaterial({color: hex2threeColor(s.color), shininess:80});
+    const tr = new THREE.Mesh(trGeo, trMat);
+    tr.position.set(0, -s.top, 0); tr.rotation.x = Math.PI/2;
+    scene.add(tr);
+
+    // Casing shoe (only for casings ≤ 9.625")
+    if(s.od <= 9.625){
+      const shGeo = new THREE.CylinderGeometry(rO*1.08, rO*0.55, 22, SEG);
+      const shMat = new THREE.MeshPhongMaterial({color: hex2threeColor(s.color), shininess:90});
+      const sh = new THREE.Mesh(shGeo, shMat);
+      sh.position.set(0, -s.bottom - 11, 0);
+      scene.add(sh);
+    } else {
+      // Larger casings: just a flat disk at the shoe
+      const shGeo = new THREE.CylinderGeometry(rO, rO, 6, SEG);
+      const shMat = new THREE.MeshPhongMaterial({color: hex2threeColor(s.color), shininess:80});
+      const sh = new THREE.Mesh(shGeo, shMat);
+      sh.position.set(0, -s.bottom - 3, 0);
+      scene.add(sh);
+    }
+
+    // Label
+    const lbl = makeTextSprite3D(s.od + '"  ' + s.label, s.color, 0.88);
+    lbl.position.set(rO + 22, -s.top - 50, 0);
+    scene.add(lbl);
+  });
+
+  // Wellbore bore (dark open hole)
+  const minCasID = sortedCasings.length ? sortedCasings[sortedCasings.length-1].id * R_SCALE / 2 * 0.9 : 38;
+  const bGeo = new THREE.CylinderGeometry(minCasID, minCasID, maxDepth, SEG, 1, true);
+  const bMat = new THREE.MeshPhongMaterial({color:0x6688aa, opacity:0.35, transparent:true, side:THREE.BackSide});
+  const bMesh = new THREE.Mesh(bGeo, bMat);
+  bMesh.position.set(0, -maxDepth/2, 0);
+  scene.add(bMesh);
+
+  // Tubing strings
+  const tub1on = document.getElementById('tub1on').checked;
+  const tub2on = document.getElementById('tub2on').checked;
+  const od1 = parseFloat(document.getElementById('tub1OD').value)||3.5;
+  const od2 = parseFloat(document.getElementById('tub2OD').value)||3.5;
+  const id1 = getTubingID(document.getElementById('tub1OD').value);
+  const id2 = getTubingID(document.getElementById('tub2OD').value);
+  const tub1Top = fromDisplay(parseFloat(document.getElementById('tub1Top').value)||0);
+  const tub1Bot = fromDisplay(parseFloat(document.getElementById('tub1Bot').value)||3000);
+  const tub2Top = fromDisplay(parseFloat(document.getElementById('tub2Top').value)||0);
+  const tub2Bot = fromDisplay(parseFloat(document.getElementById('tub2Bot').value)||3761);
+  const tub1Label = document.getElementById('tub1Label').value||'SHORT STRING';
+  const tub2Label = document.getElementById('tub2Label').value||'LONG STRING';
+  const TUBE_OFFSET = (tub1on && tub2on) ? (Math.max(od1, od2) * R_SCALE / 2) + 4 : 0;
+
+  function addTubing(od, id, top, bot, color, label, xOff){
+    const rO = od * R_SCALE / 2;
+    const rI = id * R_SCALE / 2;
+    const h  = bot - top;
+    // Outer wall
+    const tGeo = new THREE.CylinderGeometry(rO, rO, h, SEG, 1, false);
+    const tMat = new THREE.MeshPhongMaterial({color: hex2threeColor(color), shininess:90, specular:new THREE.Color(0xffffff)});
+    const tMesh = new THREE.Mesh(tGeo, tMat);
+    tMesh.position.set(xOff, -(top+bot)/2, 0);
+    scene.add(tMesh);
+    // Dark bore
+    const ibGeo = new THREE.CylinderGeometry(rI*0.94, rI*0.94, h, SEG, 1, true);
+    const ibMat = new THREE.MeshPhongMaterial({color:0x336688, side:THREE.BackSide, opacity:0.35, transparent:true});
+    const ib = new THREE.Mesh(ibGeo, ibMat);
+    ib.position.set(xOff, -(top+bot)/2, 0);
+    scene.add(ib);
+    // Shoe cone
+    const shGeo = new THREE.ConeGeometry(rO*1.12, 20, SEG);
+    const shMat = new THREE.MeshPhongMaterial({color: hex2threeColor(color), shininess:100});
+    const sh = new THREE.Mesh(shGeo, shMat);
+    sh.position.set(xOff, -bot - 10, 0);
+    sh.rotation.x = Math.PI;
+    scene.add(sh);
+    // Label — place to the right of tube, or left if on the left side
+    const sp = makeTextSprite3D(label, color, 0.82);
+    sp.position.set(xOff + (xOff <= 0 ? -(rO + 220) : rO + 20), -top - 55, 0);
+    scene.add(sp);
+  }
+
+  if(tub1on && _tub1Visible3d) addTubing(od1, id1, tub1Top, tub1Bot, _currentTub1Color||'#2266aa', tub1Label, tub1on&&tub2on ? -TUBE_OFFSET : 0);
+  if(tub2on && _tub2Visible3d) addTubing(od2, id2, tub2Top, tub2Bot, _currentTub2Color||'#1a8a5a', tub2Label, tub1on&&tub2on ? TUBE_OFFSET : 0);
+
+  // Completion elements
+  const elemColorMap = {
+    packer:'#cc2200', packer_single:'#dd3300', packer_perm:'#aa1100',
+    spm:'#008833', xsd:'#1144cc', nipple:'#556677', nipple_xn:'#445566',
+    dhsv:'#cc0000', flow_coupling:'#dd5500', blast_joint:'#990055',
+    travel_joint:'#5533bb', pop_assy:'#007766', plug:'#333344'
+  };
+
+  completionElems.forEach(e => {
+    const col  = elemColorMap[e.type] || '#888888';
+    const rE   = e.maxOD * R_SCALE / 2;
+    const h    = Math.max(10, (e.length||3));
+    const isPkr = e.type.includes('packer');
+
+    let xOff = 0;
+    if(!isPkr && tub1on && tub2on){
+      if(e.tubingStr === '1') xOff = -TUBE_OFFSET;
+      else if(e.tubingStr === '2') xOff = TUBE_OFFSET;
+    } else if(!isPkr && tub1on && !tub2on && e.tubingStr === '1'){
+      xOff = 0;
+    } else if(!isPkr && !tub1on && tub2on && e.tubingStr === '2'){
+      xOff = 0;
+    }
+
+    const yPos = -e.depth - h/2;
+    let mesh;
+
+    if(isPkr){
+      // Packer spans casing ID
+      const cs = [...casingStrings].sort((a,b)=>b.od-a.od)
+        .filter(c => e.depth >= c.top && e.depth <= c.bottom)
+        .sort((a,b)=>a.od-b.od)[0];
+      const pR = cs ? cs.id * R_SCALE / 2 * 0.95 : rE;
+      const pGeo = new THREE.CylinderGeometry(pR, pR, h, SEG);
+      const pMat = new THREE.MeshPhongMaterial({color: hex2threeColor(col), shininess:60, specular:new THREE.Color(0xffffff)});
+      mesh = new THREE.Mesh(pGeo, pMat);
+      // Rubber elements
+      for(let bi=0;bi<2;bi++){
+        const bGeo = new THREE.CylinderGeometry(pR*1.03, pR*0.68, h*0.3, SEG);
+        const bMat = new THREE.MeshPhongMaterial({color:0xee2200, shininess:40});
+        const b = new THREE.Mesh(bGeo, bMat);
+        b.position.y = (bi===0?1:-1) * h * 0.19;
+        mesh.add(b);
+      }
+    } else if(e.type === 'spm'){
+      const gGeo = new THREE.CylinderGeometry(rE, rE, h, SEG);
+      const gMat = new THREE.MeshPhongMaterial({color:0x008833, shininess:80});
+      mesh = new THREE.Mesh(gGeo, gMat);
+      const pGeo = new THREE.SphereGeometry(rE*0.75, 12, 8);
+      const pMat = new THREE.MeshPhongMaterial({color:0x00aa44, shininess:90});
+      const pkt = new THREE.Mesh(pGeo, pMat);
+      pkt.position.set(rE*1.5, 0, 0);
+      mesh.add(pkt);
+    } else if(e.type === 'dhsv'){
+      const dGeo = new THREE.SphereGeometry(rE*1.15, 16, 12);
+      const dMat = new THREE.MeshPhongMaterial({color:0xcc0000, shininess:110, specular:new THREE.Color(0xffffff)});
+      mesh = new THREE.Mesh(dGeo, dMat);
+    } else if(e.type === 'plug'){
+      const plGeo = new THREE.CylinderGeometry(rE, rE*0.55, h, SEG);
+      const plMat = new THREE.MeshPhongMaterial({color:0x222233, shininess:120, specular:new THREE.Color(0xffffff)});
+      mesh = new THREE.Mesh(plGeo, plMat);
+    } else if(e.type === 'xsd'){
+      const sGeo = new THREE.CylinderGeometry(rE, rE, h, SEG);
+      const sMat = new THREE.MeshPhongMaterial({color:0x1144cc, shininess:90, specular:new THREE.Color(0xffffff)});
+      mesh = new THREE.Mesh(sGeo, sMat);
+      for(let ri=0;ri<3;ri++){
+        const ringGeo = new THREE.TorusGeometry(rE*1.06, 1.8, 6, SEG);
+        const ringMat = new THREE.MeshPhongMaterial({color:0x2266ee});
+        const ring = new THREE.Mesh(ringGeo, ringMat);
+        ring.rotation.x = Math.PI/2;
+        ring.position.y = -h/2 + h*(ri+1)/4;
+        mesh.add(ring);
+      }
+    } else if(e.type === 'flow_coupling'){
+      const fcGeo = new THREE.CylinderGeometry(rE*1.25, rE*0.9, h, SEG);
+      const fcMat = new THREE.MeshPhongMaterial({color:0xdd5500, shininess:85, specular:new THREE.Color(0xffffff)});
+      mesh = new THREE.Mesh(fcGeo, fcMat);
+    } else if(e.type === 'blast_joint'){
+      const bjGeo = new THREE.CylinderGeometry(rE*1.22, rE*1.22, h, SEG);
+      const bjMat = new THREE.MeshPhongMaterial({color: hex2threeColor(col), shininess:50});
+      mesh = new THREE.Mesh(bjGeo, bjMat);
+    } else if(e.type === 'travel_joint'){
+      const tjGeo = new THREE.CylinderGeometry(rE, rE, h, SEG);
+      const tjMat = new THREE.MeshPhongMaterial({color: hex2threeColor(col), opacity:0.72, transparent:true, shininess:55});
+      mesh = new THREE.Mesh(tjGeo, tjMat);
+      const inGeo = new THREE.CylinderGeometry(rE*0.58, rE*0.58, h*0.62, SEG);
+      const inMat = new THREE.MeshPhongMaterial({color: hex2threeColor(col), shininess:80});
+      mesh.add(new THREE.Mesh(inGeo, inMat));
+    } else {
+      const defGeo = new THREE.CylinderGeometry(rE, rE, h, SEG);
+      const defMat = new THREE.MeshPhongMaterial({color: hex2threeColor(col), shininess:50});
+      mesh = new THREE.Mesh(defGeo, defMat);
+    }
+
+    mesh.position.set(xOff, yPos, 0);
+    mesh.castShadow = true;
+    scene.add(mesh);
+
+    // Label
+    const labelX = (e.tubingStr === '1' && tub1on && tub2on) ? xOff - rE - 220 : xOff + rE + 20;
+    const sp = makeTextSprite3D(e.label, col, 0.72);
+    sp.position.set(labelX, -e.depth, 0);
+    scene.add(sp);
+  });
+
+  // Vertical depth axis line
+  const axPts = [new THREE.Vector3(0,0,0), new THREE.Vector3(0,-maxDepth,0)];
+  const axGeo = new THREE.BufferGeometry().setFromPoints(axPts);
+  scene.add(new THREE.Line(axGeo, new THREE.LineBasicMaterial({color:0x2266aa, opacity:0.45, transparent:true})));
+}
+
+function render3D(){
+  const wrap = document.getElementById('wrap3d');
+  // If tab is hidden, just mark scene dirty so it rebuilds next time it's shown
+  if(wrap.style.display === 'none'){
+    if(_3d) _3d._dirty = true;
+    return;
+  }
+  const W = wrap.clientWidth, H = wrap.clientHeight;
+  if(!W || !H) return;
+
+  const maxDepth = fromDisplay(parseInt(document.getElementById('wellDepth').value)||4300);
+
+  if(!_3d){
+    _3d = init3D(W, H);
+  } else {
+    _3d.renderer.setSize(W, H);
+    _3d.camera.aspect = W/H;
+    _3d.camera.updateProjectionMatrix();
+  }
+
+  build3DScene(_3d.scene, maxDepth);
+
+  // Legend
+  const legend = document.getElementById('legend3d');
+  const items = [
+    ...casingStrings.filter(s=>s.visible3d!==false).map(s => ({color:s.color, label:s.label})),
+    ...(document.getElementById('tub1on').checked ? [{color:_currentTub1Color||'#2266aa', label:document.getElementById('tub1Label').value||'SHORT STRING'}] : []),
+    ...(document.getElementById('tub2on').checked ? [{color:_currentTub2Color||'#1a8a5a', label:document.getElementById('tub2Label').value||'LONG STRING'}] : []),
+  ];
+  legend.innerHTML = items.map(i =>
+    '<div style="display:flex;align-items:center;gap:5px;margin-bottom:2px;">' +
+    '<div style="width:9px;height:9px;border-radius:50%;background:' + i.color + ';flex-shrink:0;"></div>' +
+    '<span>' + i.label + '</span></div>'
+  ).join('');
+
+  _3d.renderer.render(_3d.scene, _3d.camera);
+
+  if(!_3d._animating){
+    _3d._animating = true;
+    (function loop(){
+      if(document.getElementById('wrap3d').style.display === 'none'){ _3d._animating = false; return; }
+      requestAnimationFrame(loop);
+      _3d.renderer.render(_3d.scene, _3d.camera);
+    })();
+  }
+}
+
+
+/* ══════════════════════════════════════════
+   INIT
+══════════════════════════════════════════ */
+initFilters();
+renderDbList();
+selectDb(0);
+buildStringCards();
+buildElemCards();
+buildZoneList();
+renderAll();
+window.addEventListener('resize', renderAll);
+
+/* ── DEFAULT WELL CONFIGURATION ── */
+setTimeout(()=>{
+  // 13-3/8" Surface Casing
+  document.getElementById('filterSection').value='Casing 10 3/4 to 20';
+  renderDbList();
+  const surf=filteredDb().find(({r})=>r[0]===13.375&&r[2]==='N-80')||filteredDb().find(({r})=>r[0]===13.375);
+  if(surf){ selectDb(surf.i); document.getElementById('selTop').value=0; document.getElementById('selBottom').value=1997;
+    document.getElementById('selLabel').value='13-3/8" Surface Casing'; addCasingString(); }
+
+  // 9-5/8" Production Casing
+  document.getElementById('filterSection').value='Casing 7 5/8 to 9 5/8';
+  renderDbList();
+  const prod=filteredDb().find(({r})=>r[0]===9.625&&r[2]==='N-80')||filteredDb().find(({r})=>r[0]===9.625);
+  if(prod){ selectDb(prod.i); document.getElementById('selTop').value=0; document.getElementById('selBottom').value=4172;
+    document.getElementById('selLabel').value='9-5/8" Production Casing'; addCasingString(); }
+  document.getElementById('filterSection').value=''; renderDbList();
+
+  // Tubing strings
+  document.getElementById('tub1on').checked=true; document.getElementById('tub1OD').value='3.5';
+  document.getElementById('tub1Wt').value='9.2'; document.getElementById('tub1Grade').value='L-80';
+  document.getElementById('tub1Conn').value='FOX-K';
+  document.getElementById('tub1Top').value=0; document.getElementById('tub1Bot').value=3513;
+  document.getElementById('tub1Label').value='SHORT STRING';
+
+  document.getElementById('tub2on').checked=true; document.getElementById('tub2OD').value='3.5';
+  document.getElementById('tub2Wt').value='9.2'; document.getElementById('tub2Grade').value='L-80';
+  document.getElementById('tub2Conn').value='FOX-K';
+  document.getElementById('tub2Top').value=0; document.getElementById('tub2Bot').value=3761;
+  document.getElementById('tub2Label').value='LONG STRING';
+
+  // Completion elements matching reference
+  completionElems.push({type:'flow_coupling', depth:155,   inc:0,  minOD:2.900, maxOD:4.020, tubingStr:'both',  label:'FLOW COUPLING',               length:3});
+  completionElems.push({type:'nipple',        depth:434,   inc:0,  minOD:2.813, maxOD:3.960, tubingStr:'both',  label:'X NIPPLE',                    length:3});
+  completionElems.push({type:'spm',           depth:538,   inc:28, minOD:2.900, maxOD:5.230, tubingStr:'2',     label:'3-1/2" GLM #1 (DUMMY VALVE)', length:3});
+  completionElems.push({type:'spm',           depth:835,   inc:52, minOD:2.900, maxOD:5.230, tubingStr:'2',     label:'3-1/2" GLM #2 (DUMMY VALVE)', length:3});
+  completionElems.push({type:'spm',           depth:1523,  inc:70, minOD:2.900, maxOD:5.230, tubingStr:'2',     label:'3-1/2" GLM #3 (DUMMY VALVE)', length:3});
+  completionElems.push({type:'spm',           depth:2487,  inc:71, minOD:2.900, maxOD:5.230, tubingStr:'2',     label:'3-1/2" GLM #4 (DUMMY VALVE)', length:3});
+  completionElems.push({type:'spm',           depth:3099,  inc:66, minOD:2.900, maxOD:5.230, tubingStr:'2',     label:'3-1/2" GLM #5 (DUMMY VALVE)', length:3});
+  completionElems.push({type:'packer',        depth:3341,  inc:0,  minOD:2.820, maxOD:8.475, tubingStr:'both',  label:'9 5/8" BHD HYD DUAL PKR',     length:3});
+  completionElems.push({type:'xsd',           depth:3321,  inc:69, minOD:2.813, maxOD:4.550, tubingStr:'1',     label:'XD-SSD #1 (CLOSED)',          length:3});
+  completionElems.push({type:'blast_joint',   depth:3360,  inc:71, minOD:2.900, maxOD:4.020, tubingStr:'2',     label:'BLAST JOINT',                 length:3});
+  completionElems.push({type:'nipple_xn',     depth:3510,  inc:0,  minOD:2.690, maxOD:3.960, tubingStr:'1',     label:'XN-NIPPLE',                   length:3});
+  completionElems.push({type:'pop_assy',      depth:3511,  inc:0,  minOD:2.871, maxOD:3.968, tubingStr:'1',     label:'POP ASSY',                    length:3});
+  completionElems.push({type:'plug',          depth:3513,  inc:0,  minOD:2.840, maxOD:5.530, tubingStr:'1',     label:'EOT',                         length:3});
+  completionElems.push({type:'travel_joint',  depth:3580,  inc:71, minOD:2.880, maxOD:4.900, tubingStr:'2',     label:'TRAVEL JOINT',                length:3});
+  completionElems.push({type:'packer_single', depth:3598,  inc:0,  minOD:2.820, maxOD:8.120, tubingStr:'2',     label:'9-5/8" BHR SGL HYD PKR',      length:3});
+  completionElems.push({type:'xsd',           depth:3607,  inc:71, minOD:2.813, maxOD:4.550, tubingStr:'2',     label:'XD-SSD #2 (CLOSED)',          length:3});
+  completionElems.push({type:'xsd',           depth:3627,  inc:71, minOD:2.813, maxOD:4.550, tubingStr:'2',     label:'XPD-SSD #4 (CLOSED)',         length:3});
+  completionElems.push({type:'blast_joint',   depth:3650,  inc:71, minOD:2.900, maxOD:4.020, tubingStr:'2',     label:'BLAST JOINT',                 length:3});
+  completionElems.push({type:'packer_perm',   depth:3750,  inc:0,  minOD:4.000, maxOD:8.120, tubingStr:'2',     label:'9-5/8" BWS PERMANENT PKR',    length:3});
+  completionElems.push({type:'nipple',        depth:3751,  inc:72, minOD:2.690, maxOD:3.960, tubingStr:'2',     label:'XN NIPPLE',                   length:3});
+  completionElems.push({type:'plug',          depth:3758,  inc:0,  minOD:2.840, maxOD:5.530, tubingStr:'2',     label:'SOFT EXPANDABLE PLUG / EOT',  length:3});
+
+  completionElems.sort((a,b)=>a.depth-b.depth);
+
+  // Formation zones
+  formationZones.push({name:'I-39L RES', pressure:2183, top:3372, bot:3408});
+  formationZones.push({name:'I-68 RES',  pressure:0,    top:3658, bot:3675});
+
+  // Set realistic cement tops for default casings (surface = cemented to surface; production = TOC ~1500m)
+  // casingStrings is sorted by OD desc: [0]=13-3/8" surface, [1]=9-5/8" production
+  if(casingStrings[0]) casingStrings[0].cementTop = 0;      // Surface casing: cemented to surface
+  if(casingStrings[1]) casingStrings[1].cementTop = 1500;   // Production casing: TOC at 1500 m
+
+  buildElemCards();
+  buildZoneList();
+  buildCementHeightList();
+  initZoomPan();
+  renderAll();
+}, 100);
+
+
+/* ─── CASING 3D VISIBILITY TOGGLES ─── */
+function toggleCasingVis3d(i){
+  casingStrings[i].visible3d = casingStrings[i].visible3d === false ? true : false;
+  buildStringCards();
+  render3D();
+}
+function toggleAllCasings3d(){
+  const anyVisible = casingStrings.some(s => s.visible3d !== false);
+  casingStrings.forEach(s => s.visible3d = !anyVisible);
+  buildStringCards();
+  render3D();
+}
+
+/* ─── DAY / NIGHT THEME TOGGLE ─── */
+let _3dDayMode = true;
+const _3dThemes = {
+  day:   { bg:0xdde6ef, fog:0xdde6ef, fogD:0.00012,
+            amb:0xffffff, ambI:1.4, dir:0xfff5e0, dirI:1.5,
+            pt1:0xffeedd, pt1I:0.6, pt2:0xc8dce8, pt2I:0.4,
+            grid:0x7aaabb, axis:0x2266aa,
+            tub1:'#2266aa', tub2:'#1a8a5a',
+            wrapBg:'#dde6ef', hudCol:'rgba(0,80,120,0.85)', hudBg:'rgba(255,255,255,0.55)',
+            legCol:'rgba(5,40,70,0.9)', legBg:'rgba(255,255,255,0.72)' },
+  night: { bg:0x0a1520, fog:0x0a1520, fogD:0.00018,
+            amb:0x223344, ambI:0.9, dir:0xffffff, dirI:1.2,
+            pt1:0x00c8f0, pt1I:0.8, pt2:0x80d0ff, pt2I:0.5,
+            grid:0x1a3a4a, axis:0x00c8f0,
+            tub1:'#aaaaaa', tub2:'#777777',
+            wrapBg:'#0a1520', hudCol:'rgba(0,200,240,0.7)', hudBg:'transparent',
+            legCol:'rgba(180,210,230,0.8)', legBg:'transparent' }
+};
+
+function toggle3DTheme(){
+  _3dDayMode = !_3dDayMode;
+  const btn = document.getElementById('dayNightBtn');
+  btn.textContent = _3dDayMode ? '🌙 Night' : '☀ Day';
+  if(_3d){
+    const t = _3dDayMode ? _3dThemes.day : _3dThemes.night;
+    _3d.scene.background = new THREE.Color(t.bg);
+    if(_3d.scene.fog){ _3d.scene.fog.color.set(t.fog); _3d.scene.fog.density = t.fogD; }
+    // Update wrap3d bg
+    document.getElementById('wrap3d').style.background = t.wrapBg;
+    // Update HUD
+    const hud = document.getElementById('hud3d');
+    hud.style.color = t.hudCol;
+    hud.style.background = t.hudBg;
+    // Update legend
+    const leg = document.getElementById('legend3d');
+    leg.style.color = t.legCol;
+    leg.style.background = t.legBg;
+    // Rebuild scene with new colours (patch tubing colours then rebuild)
+    _currentTub1Color = t.tub1;
+    _currentTub2Color = t.tub2;
+    _currentTheme = _3dDayMode ? 'day' : 'night';
+    applyVis3dTheme(_3dDayMode);
+    buildVis3dRows();
+    render3D();
+  }
+}
+
+/* ══════════════════════════════════════════
+   FLOATING 3D VISIBILITY PANEL
+══════════════════════════════════════════ */
+
+// Per-casing opacity state (0-1), keyed by casing index
+let _casingOpacity = [];   // per-casing override; null = use global
+let _globalCasingOpacity = 0.78;
+let _globalCementOpacity = 0.28;
+let _tub1Visible3d = true;
+let _tub2Visible3d = true;
+let _vis3dCollapsed = false;
+
+/* ── Show / hide panel when switching views ── */
+function setVis3dPanelVisible(v){
+  const p = document.getElementById('vis3dPanel');
+  p.style.display = v ? 'block' : 'none';
+}
+
+/* ── Collapse / expand ── */
+function toggleVis3dCollapse(){
+  _vis3dCollapsed = !_vis3dCollapsed;
+  document.getElementById('vis3dBody').style.display = _vis3dCollapsed ? 'none' : 'block';
+  document.getElementById('vis3dCollapseBtn').textContent = _vis3dCollapsed ? '+' : '−';
+}
+
+/* ── Draggable panel ── */
+(function initVis3dDrag(){
+  let dragging = false, ox = 0, oy = 0;
+  const handle = () => document.getElementById('vis3dDragHandle');
+  const panel  = () => document.getElementById('vis3dPanel');
+  document.addEventListener('mousedown', e => {
+    const h = handle();
+    if(!h || !h.contains(e.target)) return;
+    dragging = true;
+    const r = panel().getBoundingClientRect();
+    ox = e.clientX - r.left;
+    oy = e.clientY - r.top;
+    e.preventDefault();
+  });
+  document.addEventListener('mousemove', e => {
+    if(!dragging) return;
+    const wrap = document.getElementById('wrap3d');
+    const wr   = wrap.getBoundingClientRect();
+    const p    = panel();
+    let nx = e.clientX - wr.left - ox;
+    let ny = e.clientY - wr.top  - oy;
+    nx = Math.max(0, Math.min(wr.width  - p.offsetWidth,  nx));
+    ny = Math.max(0, Math.min(wr.height - p.offsetHeight, ny));
+    p.style.left = nx + 'px';
+    p.style.top  = ny + 'px';
+  });
+  document.addEventListener('mouseup', () => { dragging = false; });
+})();
+
+/* ── Build per-casing + tubing rows ── */
+function buildVis3dRows(){
+  // Ensure _casingOpacity array matches casingStrings length
+  while(_casingOpacity.length < casingStrings.length) _casingOpacity.push(null);
+  _casingOpacity.length = casingStrings.length;
+
+  const casingCont = document.getElementById('vis3dCasingRows');
+  if(!casingCont) return;
+
+  if(!casingStrings.length){
+    casingCont.innerHTML = '<div style="font-size:9px;color:rgba(120,160,180,0.6);padding:2px 0;">No casing strings.</div>';
+  } else {
+    casingCont.innerHTML = casingStrings.map((s, i) => {
+      const vis = s.visible3d !== false;
+      const op  = _casingOpacity[i] !== null && _casingOpacity[i] !== undefined
+                    ? Math.round(_casingOpacity[i] * 100)
+                    : Math.round(_globalCasingOpacity * 100);
+      return `
+      <div class="vis3d-row" id="vis3drow-${i}">
+        <div class="vis3d-swatch" style="background:${s.color};"></div>
+        <div class="vis3d-name" title="${s.label}">${s.label}</div>
+        <input type="range" class="vis3d-opacity" style="width:42px;" min="5" max="100" value="${op}"
+          oninput="setCasingOpacity(${i}, this.value/100)" ${vis?'':'disabled'}>
+        <label class="vis3d-toggle" title="Show/hide in 3D">
+          <input type="checkbox" ${vis?'checked':''} onchange="toggleSingleCasing3d(${i}, this.checked)">
+          <span class="vis3d-slider"></span>
+        </label>
+      </div>`;
+    }).join('');
+  }
+
+  // Tubing rows
+  const tubCont = document.getElementById('vis3dTubingRows');
+  if(!tubCont) return;
+  const tub1lbl = document.getElementById('tub1Label')?.value || 'SHORT STRING';
+  const tub2lbl = document.getElementById('tub2Label')?.value || 'LONG STRING';
+  const tub1col = _currentTub1Color || '#2266aa';
+  const tub2col = _currentTub2Color || '#1a8a5a';
+  tubCont.innerHTML = `
+    <div class="vis3d-row">
+      <div class="vis3d-swatch" style="background:${tub1col};"></div>
+      <div class="vis3d-name">${tub1lbl}</div>
+      <label class="vis3d-toggle" title="Show/hide Short String">
+        <input type="checkbox" ${_tub1Visible3d?'checked':''} onchange="toggleTubing3d(1,this.checked)">
+        <span class="vis3d-slider"></span>
+      </label>
+    </div>
+    <div class="vis3d-row">
+      <div class="vis3d-swatch" style="background:${tub2col};"></div>
+      <div class="vis3d-name">${tub2lbl}</div>
+      <label class="vis3d-toggle" title="Show/hide Long String">
+        <input type="checkbox" ${_tub2Visible3d?'checked':''} onchange="toggleTubing3d(2,this.checked)">
+        <span class="vis3d-slider"></span>
+      </label>
+    </div>`;
+
+  // Sync master toggle
+  const master = document.getElementById('masterCasingToggle');
+  if(master) master.checked = casingStrings.some(s => s.visible3d !== false);
+}
+
+/* ── Toggle individual casing ── */
+function toggleSingleCasing3d(i, checked){
+  casingStrings[i].visible3d = checked;
+  // Enable/disable the opacity slider for this row
+  const row = document.getElementById('vis3drow-' + i);
+  if(row){
+    const slider = row.querySelector('input[type=range]');
+    if(slider) slider.disabled = !checked;
+  }
+  // Sync master toggle
+  const master = document.getElementById('masterCasingToggle');
+  if(master) master.checked = casingStrings.some(s => s.visible3d !== false);
+  buildStringCards(); // sync sidebar cards too
+  render3D();
+}
+
+/* ── Master toggle ── */
+function masterToggleCasings3d(checked){
+  casingStrings.forEach(s => s.visible3d = checked);
+  buildStringCards();
+  buildVis3dRows();
+  render3D();
+}
+
+/* ── Per-casing opacity ── */
+function setCasingOpacity(i, val){
+  _casingOpacity[i] = parseFloat(val);
+  render3D();
+}
+
+/* ── Global casing opacity ── */
+function updateGlobalCasingOpacity(val){
+  _globalCasingOpacity = parseInt(val) / 100;
+  document.getElementById('globalCasingOpacityVal').textContent = val + '%';
+  // Clear per-casing overrides so global takes effect
+  _casingOpacity = _casingOpacity.map(() => null);
+  buildVis3dRows();
+  render3D();
+}
+
+/* ── Global cement opacity ── */
+function updateGlobalCementOpacity(val){
+  _globalCementOpacity = parseInt(val) / 100;
+  document.getElementById('globalCementOpacityVal').textContent = val + '%';
+  render3D();
+}
+
+/* ── Tubing visibility toggles ── */
+function toggleTubing3d(which, checked){
+  if(which === 1) _tub1Visible3d = checked;
+  else            _tub2Visible3d = checked;
+  render3D();
+}
+
+/* ── Night mode panel theming ── */
+function applyVis3dTheme(isDay){
+  const p = document.getElementById('vis3dPanel');
+  if(!p) return;
+  if(isDay){
+    p.style.background = 'rgba(10, 28, 46, 0.88)';
+    p.style.borderColor = 'rgba(0,180,220,0.28)';
+  } else {
+    p.style.background = 'rgba(4, 12, 22, 0.95)';
+    p.style.borderColor = 'rgba(0,200,240,0.22)';
+  }
+}
+
+let _currentTub1Color = '#2266aa';
+let _currentTub2Color = '#1a8a5a';
+let _currentTheme = 'day';
+
+</script>
+</body>
+</html>
